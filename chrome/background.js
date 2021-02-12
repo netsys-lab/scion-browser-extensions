@@ -40,7 +40,7 @@ chrome.webRequest.onBeforeRequest.addListener(function(details) {
  * This would be the approach to support URLs like scion+https
  * Not sure if this works inside a browser plugin
  */
-navigator.registerProtocolHandler("scion+https",
+navigator.registerProtocolHandler("web+scion",
                                   "Some SCION URL %s",
                                   "SCION Web");
 
@@ -51,7 +51,10 @@ var config = {
   mode: "pac_script",
   pacScript: {
     data: "function FindProxyForURL(url, host) {\n" +
-          "    return 'HTTPS Some SCION URL';\n" +
+              "if(host == 'scionlab.network') {\n" + 
+          "    return 'HTTPS someurl';\n" +
+            "}\n" +
+            "return 'DIRECT';\n" + 
           "}"
   }
 };

@@ -20,17 +20,17 @@
   "page_action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "images/scion-0.png",
-      "32": "images/scion-1.png",
-      "48": "images/scion-2.png",
-      "128": "images/scion-3.png"
+      "16": "images/scion-0.jpg",
+      "32": "images/scion-1.jpg",
+      "48": "images/scion-2.jpg",
+      "128": "images/scion-3.jpg"
     }
   },
   "icons": {
-    "16": "images/scion-0.png",
-    "32": "images/scion-1.png",
-    "48": "images/scion-2.png",
-    "128": "images/scion-3.png"
+    "16": "images/scion-0.jpg",
+    "32": "images/scion-1.jpg",
+    "48": "images/scion-2.jpg",
+    "128": "images/scion-3.jpg"
   },
   "manifest_version": 2
 }
