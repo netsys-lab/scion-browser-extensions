@@ -9,10 +9,11 @@
     "storage",
     "webRequest",
     "webRequestBlocking",
-    "https://*/*"
+    "https://*/*",
+    "http://localhost/*"
   ],
   "omnibox": { "keyword" : "scion" },
-  "options_page": "options.html", 
+  "options_page": "options.html",
   "background": {
     "scripts": ["background.js"],
     "persistent": true

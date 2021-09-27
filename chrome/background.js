@@ -1,48 +1,6 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// Copyright 2021 ETH
 
 'use strict';
-
-/**
- * This file contains some ideas and code snippets for the plugin
- * May be used as starting point
- * 
- */
-
-/*
- * This could be used to intercept requests and to redirect them to another endpoint
- * May be obsolete with the PAC script... 
-*/
-chrome.webRequest.onBeforeRequest.addListener(function(details) {
-  console.log(details.url);
-  const pUrl = decodeURIComponent(details.url);
-  const startIndex = pUrl.indexOf('https://', 5);
-  const lastIndex = pUrl.indexOf('&', startIndex);
-  let scionUrl = null;
-
-  if (startIndex > 0 && lastIndex > 0) {
-    scionUrl = pUrl.substring(startIndex, lastIndex);
-    return {redirectUrl: 'Some SCION URL' + '?r=' + encodeURIComponent(scionUrl)};
-  }
-
-  return {
-    redirectUrl: details.url,
-  }
-}, {
-  urls: ['<all_urls>'], // or <all_urls>
-  types: ['main_frame', 'sub_frame'],
-}, [
-  'blocking'
-]);
-
-/*
- * This would be the approach to support URLs like scion+https
- * Not sure if this works inside a browser plugin
- */
-navigator.registerProtocolHandler("web+scion",
-                                  "Some SCION URL %s",
-                                  "SCION Web");
 
 /**
  * This is the starting point to insert the existing PAC script of the current implementation
@@ -50,12 +8,18 @@ navigator.registerProtocolHandler("web+scion",
 var config = {
   mode: "pac_script",
   pacScript: {
-    data: "function FindProxyForURL(url, host) {\n" +
-              "if(host == 'scionlab.network') {\n" + 
-          "    return 'HTTPS someurl';\n" +
-            "}\n" +
-            "return 'DIRECT';\n" + 
-          "}"
+    // data: " const scionHosts = new Set([" +
+    //   "'scionlab.org'," +
+    //   "'www.scionlab.org'," +
+    //   "'www.scion-architecture.net'," +
+    //   " ])\n" +
+    //       "function FindProxyForURL(url, host) {\n" +
+    //           "if(scionHosts.has(host)) {\n" +
+    //       "    return 'PROXY localhost:8888';\n" +
+    //         "}\n" +
+    //         "return 'DIRECT';\n" +
+    //       "}"
+    url: "http://localhost:8888/skip.pac"
   }
 };
 
@@ -68,11 +32,42 @@ chrome.proxy.settings.get(
   {'incognito': false},
   function(config) {console.log(JSON.stringify(config));});
 
+function loadHostList(){
+  var req = new XMLHttpRequest();
+  req.open("GET", "http://localhost:8888/scion-host", true);
+  req.onreadystatechange = function() {
+      if (req.readyState == 4) {
+        if (req.status == 200) {
+          const resp = req.responseText;
+          const hostSet = new Set(resp.split('\n'));
+          chrome.storage.sync.set({'list': [...hostSet]}, function() {
+            console.log('Storing the host list:\n' + [...hostSet]);
+          });
+        }
+      }
+    };
+  req.send();
+}
 
-chrome.omnibox.onInputEntered.addListener(
-function(text) {
-  // Encode user input for special characters , / ? : @ & = + $ #
-  var newURL = 'Some SCION URL' + encodeURIComponent(text);
-  chrome.tabs.create({ url: newURL });
-});
-  
+function getSyncHosts() {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get(['list'], function(result) {
+      const hostSet = new Set(result.list)
+      resolve(hostSet);
+    });
+  });
+}
+
+function addHost(host){
+  getSyncHosts().then(hostSet => {
+    hostSet.add(host);
+    chrome.storage.sync.set({'list': [...hostSet]}, function() {
+      console.log('Added host to:\n' + [...hostSet]);
+    });
+  });
+}
+
+//loadHostList();
+getSyncHosts().then(hostSet => console.log('Stored host list:\n' + [...hostSet] ));
+addHost("example.scion.net");
+
