@@ -11,10 +11,15 @@ document.getElementById('button-write-hostname')
               document.getElementById("input-hostname").value = ""
               addHost(hostname).then(hostSet=>{
                 displayHostList([...hostSet]);
+                return hostSet;
+              }).then(hostSet =>{
+                let request = {
+                  type: 'updatePAC',
+                  list: [...hostSet],
+                }
+                chrome.runtime.sendMessage(request);
               });
             });
-
-
 
 
 document.getElementById('button-delete-hostname')
@@ -29,6 +34,13 @@ document.getElementById('button-delete-hostname')
               }
               deleteHosts(hostList).then(hostSet=>{
                 displayHostList([...hostSet]);
+                return hostSet;
+              }).then(hostSet =>{
+                let request = {
+                  type: 'updatePAC',
+                  list: [...hostSet],
+                }
+                chrome.runtime.sendMessage(request);
               });
             });
 

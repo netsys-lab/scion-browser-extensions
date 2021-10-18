@@ -5,32 +5,39 @@
 /**
  * This is the starting point to insert the existing PAC script of the current implementation
  */
-var config = {
-  mode: "pac_script",
-  pacScript: {
-    // data: " const scionHosts = new Set([" +
-    //   "'scionlab.org'," +
-    //   "'www.scionlab.org'," +
-    //   "'www.scion-architecture.net'," +
-    //   " ])\n" +
-    //       "function FindProxyForURL(url, host) {\n" +
-    //           "if(scionHosts.has(host)) {\n" +
-    //       "    return 'PROXY localhost:8888';\n" +
-    //         "}\n" +
-    //         "return 'DIRECT';\n" +
-    //       "}"
-    url: "http://localhost:8888/skip.pac"
-  }
-};
+var PACpreamble = " const scionHosts = new Set([\n"
+var PACtemplate =
+  " ])\n" +
+      "function FindProxyForURL(url, host) {\n" +
+          "if(scionHosts.has(host)) {\n" +
+      "    return 'PROXY localhost:8888';\n" +
+        "}\n" +
+        "return 'DIRECT';\n" +
+      "}"
 
-chrome.proxy.settings.set(
-    {value: config, scope: 'regular'},
-    function() {});
+// var config = {
+//   mode: "pac_script",
+//   pacScript: {
+//     // data: " const scionHosts = new Set([" +
+//     //   "'scionlab.org'," +
+//     //   "'www.scionlab.org'," +
+//     //   "'www.scion-architecture.net'," +
+//     //   " ])\n" +
+//     //       "function FindProxyForURL(url, host) {\n" +
+//     //           "if(scionHosts.has(host)) {\n" +
+//     //       "    return 'PROXY localhost:8888';\n" +
+//     //         "}\n" +
+//     //         "return 'DIRECT';\n" +
+//     //       "}"
+//     url: "http://localhost:8888/skip.pac"
+//   }
+// };
 
-// Double check if the script is set correctly
-chrome.proxy.settings.get(
-  {'incognito': false},
-  function(config) {console.log(JSON.stringify(config));});
+
+// chrome.proxy.settings.set(
+//     {value: config, scope: 'regular'},
+//     function() {});
+
 
 function loadHostList(){
   var req = new XMLHttpRequest();
@@ -67,7 +74,48 @@ function addHost(host){
   });
 }
 
+function updatePACScript(hostList){
+  // Receive message from popup.js when adding or removing hostname
+
+  // Transform list to string
+  let stringList = ""
+  for (const hostname of hostList){
+    stringList += "'"+ hostname + "',\n";
+  }
+
+  //PACpreamble + hosts concatenated with, + PACtemplate
+  var config = {
+    mode: "pac_script",
+    pacScript: {
+      data: PACpreamble + stringList + PACtemplate,
+    }
+  };
+  chrome.proxy.settings.set(
+    {value: config, scope: 'regular'},
+    function() {});
+}
+// Double check if the script is set correctly
+function checkPACconfig(){
+  chrome.proxy.settings.get(
+    {'incognito': false},
+    function(config) {console.log(JSON.stringify(config));});
+}
+
+
+chrome.runtime.onMessage.addListener(receiveMessage)
+
+function receiveMessage(request){
+  if (request.type == 'updatePAC'){
+    updatePACScript(request.list);
+    checkPACconfig();
+  }
+}
+
 //loadHostList();
-getSyncHosts().then(hostSet => console.log('Stored host list:\n' + [...hostSet] ));
-addHost("example.scion.net");
+getSyncHosts().then(hostSet => {
+  console.log('Stored host list:\n' + [...hostSet]);
+  return hostSet;}).then(hostSet => {
+    updatePACScript([...hostSet])
+  }).then(()=> checkPACconfig());
+
 
