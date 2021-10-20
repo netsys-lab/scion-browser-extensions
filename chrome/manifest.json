@@ -4,7 +4,6 @@
   "description": "Build an Extension!",
   "permissions": [
     "activeTab",
-    "browserAction",
     "declarativeContent",
     "proxy",
     "storage",

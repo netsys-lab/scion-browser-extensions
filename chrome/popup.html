@@ -1,15 +1,54 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <style>
       h3 {
-        min-width: 200px;
+        min-width: 300px;
         text-align: center;
       }
+
+      body {
+        background: rgb(248,247,250);
+        background: linear-gradient(90deg, rgba(248,247,250,1) 0%, rgba(230,230,238,1) 35%, rgba(228,240,242,1) 100%);
+      }
+
+      /* Toggle A */
+      input:checked ~ .dot {
+        transform: translateX(100%);
+        background-color: #48bb78;
+      }
+
     </style>
+        
   </head>
-  <body>
-    <h3 id="headline">SCION forwarding disabled</h3>
+  <body class="">
+    <h3 class="text-xl font-bold mb-3 mt-3">SCION Browser Extension</h3>
+    <div class="flex justify-center mb-4"><label 
+      for="toogleA"
+      class="flex items-center cursor-pointer"
+    >
+      <div class="mr-3 text-gray-700 font-medium text-base ">
+        Extension Running:
+      </div>
+      <!-- toggle -->
+      <div class="relative" id="checkboxRunning">
+        <!-- input -->
+        <input id="toggleRunning" type="checkbox" class="sr-only" onchange="toggleExtensionRunning();"/>
+        <!-- line -->
+        <div class="w-10 h-4 bg-gray-400 rounded-full shadow-inner"></div>
+        <!-- dot -->
+        <div class="dot absolute w-6 h-6 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+      </div>
+      <!-- label -->
+      
+    </label></div>
+    <div class="flex justify-center mb-4"><span class="text-base mr-1 text-gray-700 font-medium">SCION forwarding:</span> <span id="headline" class="inline-block rounded-full text-white bg-red-500 px-2 py-1 text-sm font-bold mr-3">Inactive</span></div>
+    <hr >
+    <h3 class="text-lg font-bold mb-2 mt-3">Forwarding Enabled Domains</h3>
+    <div id="hostlist" class="flex flex-col items-center mb-4">
+
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

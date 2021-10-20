@@ -91,11 +91,29 @@ function getForwardingEnabled() {
   });
 }
 
+function setExtensionRunning(value) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.set({'extension_running': value}, function() {
+      resolve();
+    });
+  });
+}
+
+function getExtensionRunning() {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get(['extension_running'], function(result) {
+      resolve(result.extension_running);
+    });
+  });
+}
+
 chrome.tabs.onUpdated.addListener(function
   (tabId, changeInfo, tab) {
+    console.log(changeInfo);
+    console.log(tab);
     // read changeInfo data and do something with it (like read the url)
-    if (changeInfo.url) {
-      const { hostname } = new URL(changeInfo.url);
+    if (tab.active && tab.url) {
+      const { hostname } = new URL(tab.url);
       console.log(hostname);
       getSyncHosts().then(hostSet => {
         console.log(hostSet);
@@ -115,3 +133,7 @@ chrome.tabs.onUpdated.addListener(function
 chrome.browserAction.onClicked.addListener(function () {
   chrome.tabs.sendMessage(activeTab.id, { "message": "clicked_browser_action" })
 })
+
+
+
+
