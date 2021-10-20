@@ -4,27 +4,25 @@
   "description": "Build an Extension!",
   "permissions": [
     "activeTab",
+    "browserAction",
     "declarativeContent",
     "proxy",
     "storage",
     "webRequest",
     "webRequestBlocking",
-    "https://*/*"
+    "https://*/*",
+    "http://localhost/*",
+    "tabs"
   ],
+  "browser_action": {
+    "default_icon": "images/scion-38.jpg",
+    "default_popup": "popup.html"
+  },
   "omnibox": { "keyword" : "scion" },
-  "options_page": "options.html", 
+  "options_page": "options.html",
   "background": {
     "scripts": ["background.js"],
     "persistent": true
-  },
-  "page_action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "images/scion-0.jpg",
-      "32": "images/scion-1.jpg",
-      "48": "images/scion-2.jpg",
-      "128": "images/scion-3.jpg"
-    }
   },
   "icons": {
     "16": "images/scion-0.jpg",
