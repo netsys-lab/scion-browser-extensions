@@ -15,30 +15,6 @@ var PACtemplate =
         "return 'DIRECT';\n" +
       "}"
 
-// var config = {
-//   mode: "pac_script",
-//   pacScript: {
-//     // data: " const scionHosts = new Set([" +
-//     //   "'scionlab.org'," +
-//     //   "'www.scionlab.org'," +
-//     //   "'www.scion-architecture.net'," +
-//     //   " ])\n" +
-//     //       "function FindProxyForURL(url, host) {\n" +
-//     //           "if(scionHosts.has(host)) {\n" +
-//     //       "    return 'PROXY localhost:8888';\n" +
-//     //         "}\n" +
-//     //         "return 'DIRECT';\n" +
-//     //       "}"
-//     url: "http://localhost:8888/skip.pac"
-//   }
-// };
-
-
-// chrome.proxy.settings.set(
-//     {value: config, scope: 'regular'},
-//     function() {});
-
-
 function loadHostList(){
   var req = new XMLHttpRequest();
   req.open("GET", "http://localhost:8888/scion-host", true);
@@ -56,20 +32,34 @@ function loadHostList(){
   req.send();
 }
 
+function loadHostList(){
+  var req = new XMLHttpRequest();
+  req.open("GET", "http://localhost:8888/scion-host", true);
+  req.onreadystatechange = function() {
+      if (req.readyState == 4) {
+        if (req.status == 200) {
+          const resp = req.responseText;
+          const hostList = resp.split('\n');
+          getSyncHosts().then(hostSet => {
+            for (const host of hostList){
+              hostSet.add(host);
+            }
+            chrome.storage.sync.set({'list': [...hostSet]}, function() {
+              console.log('Hosts from proxy:\n' + hostList);
+            });
+          });
+        }
+      }
+    };
+  req.send();
+}
+
+
 function getSyncHosts() {
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get(['list'], function(result) {
       const hostSet = new Set(result.list)
       resolve(hostSet);
-    });
-  });
-}
-
-function addHost(host){
-  getSyncHosts().then(hostSet => {
-    hostSet.add(host);
-    chrome.storage.sync.set({'list': [...hostSet]}, function() {
-      console.log('Added host to:\n' + [...hostSet]);
     });
   });
 }
@@ -101,21 +91,19 @@ function checkPACconfig(){
     function(config) {console.log(JSON.stringify(config));});
 }
 
-
-chrome.runtime.onMessage.addListener(receiveMessage)
-
-function receiveMessage(request){
-  if (request.type == 'updatePAC'){
-    updatePACScript(request.list);
+chrome.storage.onChanged.addListener((changes, namespace) =>{
+  if (namespace == 'sync' && changes.list?.newValue){
+    updatePACScript(changes.list.newValue);
     checkPACconfig();
   }
-}
+})
 
-//loadHostList();
 getSyncHosts().then(hostSet => {
   console.log('Stored host list:\n' + [...hostSet]);
   return hostSet;}).then(hostSet => {
-    updatePACScript([...hostSet])
-  }).then(()=> checkPACconfig());
+    updatePACScript([...hostSet]);
+    checkPACconfig();
+  });
+loadHostList();
 
 

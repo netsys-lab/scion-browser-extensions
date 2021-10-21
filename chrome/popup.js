@@ -12,13 +12,7 @@ document.getElementById('button-write-hostname')
               addHost(hostname).then(hostSet=>{
                 displayHostList([...hostSet]);
                 return hostSet;
-              }).then(hostSet =>{
-                let request = {
-                  type: 'updatePAC',
-                  list: [...hostSet],
-                }
-                chrome.runtime.sendMessage(request);
-              });
+              })
             });
 
 
@@ -35,13 +29,7 @@ document.getElementById('button-delete-hostname')
               deleteHosts(hostList).then(hostSet=>{
                 displayHostList([...hostSet]);
                 return hostSet;
-              }).then(hostSet =>{
-                let request = {
-                  type: 'updatePAC',
-                  list: [...hostSet],
-                }
-                chrome.runtime.sendMessage(request);
-              });
+              })
             });
 
 function displayHostList(hostList){
