@@ -1,9 +1,44 @@
 'use strict';
 
-window.onload = chrome.storage.sync.get(['list'], function(result) {
-  let hostList = result.list;
-  displayHostList(hostList);
-})
+let headline = document.getElementById('headline');
+let toggleRunning = document.getElementById('toggleRunning');
+let checkboxRunning = document.getElementById('checkboxRunning');
+
+window.onload = function () {
+  // Update host list in popup
+  getStorageValue('list').then((hostSet) => {
+    displayHostList(hostSet); 
+  });
+
+  // Update Forwarding badge depending on storage settings
+  getStorageValue('forwarding_enabled').then(isForwardingEnabled => {
+    if(isForwardingEnabled) {
+      headline.innerText = "Active"
+      headline.className = "inline-block rounded-full text-white bg-green-500 px-2 py-1 text-xs font-bold mr-3";
+    } else {
+      headline.innerText = "Inactive"
+      headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
+    }
+  });
+
+  // Load extension running value and remove other settings in case its not running
+  getStorageValue('extension_running').then((val) => {
+    toggleRunning.checked = val;
+    document.getElementById('domains-container').hidden = !toggleRunning.checked;
+  });
+}
+
+// Start/Stop global forwarding
+function toggleExtensionRunning () {
+  toggleRunning.checked = !toggleRunning.checked
+  saveStorageValue('extension_running',toggleRunning.checked).then(() => {
+    document.getElementById('domains-container').hidden = !toggleRunning.checked;
+  });
+
+}
+checkboxRunning.onclick = toggleExtensionRunning;
+
+
 
 document.getElementById('button-write-hostname')
             .addEventListener('click', function() {
@@ -36,37 +71,28 @@ function displayHostList(hostList){
   document.getElementById('output').innerHTML = ""
   for(var i=0; i < hostList.length; i++){
     document.getElementById('output')
-          .innerHTML+= '<div><input type="checkbox" id=hostname-' + i + '>'+  hostList[i] + ' </input></div>';
+          .innerHTML+= '<label class="inline-flex items-center mt-3"> <input type="checkbox" id=hostname-' + i + ' class="form-checkbox h-4 w-4 text-gray-600"><span class="ml-2 text-gray-700">'+  hostList[i] + '</span> </label>';
   }
 }
 
-function getSyncHosts() {
-  return new Promise((resolve, reject) => {
-    chrome.storage.sync.get(['list'], function(result) {
-      const hostSet = new Set(result.list)
-      resolve(hostSet);
-    });
-  });
-}
-
 function addHost(host){
-  return getSyncHosts().then(hostSet => {
+  return getStorageValue('list').then(toSet).then(hostSet => {
     hostSet.add(host);
-    chrome.storage.sync.set({'list': [...hostSet]}, function() {
+    saveStorageValue('list', [...hostSet]).then(() => {
       console.log('Added host: ' + host);
-    });
+    })
     return hostSet;
   });
 }
 
 function deleteHosts(hostlist){
-  return getSyncHosts().then(hostSet => {
+  return getStorageValue('list').then(toSet).then(hostSet => {
     for (const hostname of hostlist){
       hostSet.delete(hostname);
     }
-    chrome.storage.sync.set({'list': [...hostSet]}, function() {
+    saveStorageValue('list', [...hostSet]).then(() => {
       console.log('Deleted hosts: ' + hostlist);
-    });
+    })
     return hostSet;
   });
 }
