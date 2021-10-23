@@ -1,16 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <style>
-      button {
-        height: 30px;
-        width: 30px;
-        outline: none;
-      }
-    </style>
   </head>
   <body>
-    <button id="changeColor"></button>
+    <div>
+      <b>Host List</b>
+    </div>
+    <div id=output>
+      <!-- TEXT showing urls in persistance -->
+    </div>
+    <div>
+      <button id="button-delete-hostname">Delete</button>
+    </div>
+    <div>
+      Add host:
+      <input type="text" id="input-hostname">
+      <button id="button-write-hostname">Add</button>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

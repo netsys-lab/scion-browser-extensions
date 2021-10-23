@@ -1,78 +1,109 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// Copyright 2021 ETH
 
 'use strict';
 
 /**
- * This file contains some ideas and code snippets for the plugin
- * May be used as starting point
- * 
- */
-
-/*
- * This could be used to intercept requests and to redirect them to another endpoint
- * May be obsolete with the PAC script... 
-*/
-chrome.webRequest.onBeforeRequest.addListener(function(details) {
-  console.log(details.url);
-  const pUrl = decodeURIComponent(details.url);
-  const startIndex = pUrl.indexOf('https://', 5);
-  const lastIndex = pUrl.indexOf('&', startIndex);
-  let scionUrl = null;
-
-  if (startIndex > 0 && lastIndex > 0) {
-    scionUrl = pUrl.substring(startIndex, lastIndex);
-    return {redirectUrl: 'Some SCION URL' + '?r=' + encodeURIComponent(scionUrl)};
-  }
-
-  return {
-    redirectUrl: details.url,
-  }
-}, {
-  urls: ['<all_urls>'], // or <all_urls>
-  types: ['main_frame', 'sub_frame'],
-}, [
-  'blocking'
-]);
-
-/*
- * This would be the approach to support URLs like scion+https
- * Not sure if this works inside a browser plugin
- */
-navigator.registerProtocolHandler("web+scion",
-                                  "Some SCION URL %s",
-                                  "SCION Web");
-
-/**
  * This is the starting point to insert the existing PAC script of the current implementation
  */
-var config = {
-  mode: "pac_script",
-  pacScript: {
-    data: "function FindProxyForURL(url, host) {\n" +
-              "if(host == 'scionlab.network') {\n" + 
-          "    return 'HTTPS someurl';\n" +
-            "}\n" +
-            "return 'DIRECT';\n" + 
-          "}"
-  }
-};
+var PACpreamble = " const scionHosts = new Set([\n"
+var PACtemplate =
+  " ])\n" +
+      "function FindProxyForURL(url, host) {\n" +
+          "if(scionHosts.has(host)) {\n" +
+      "    return 'PROXY localhost:8888';\n" +
+        "}\n" +
+        "return 'DIRECT';\n" +
+      "}"
 
-chrome.proxy.settings.set(
+function loadHostList(){
+  var req = new XMLHttpRequest();
+  req.open("GET", "http://localhost:8888/scion-host", true);
+  req.onreadystatechange = function() {
+      if (req.readyState == 4) {
+        if (req.status == 200) {
+          const resp = req.responseText;
+          const hostSet = new Set(resp.split('\n'));
+          chrome.storage.sync.set({'list': [...hostSet]}, function() {
+            console.log('Storing the host list:\n' + [...hostSet]);
+          });
+        }
+      }
+    };
+  req.send();
+}
+
+function loadHostList(){
+  var req = new XMLHttpRequest();
+  req.open("GET", "http://localhost:8888/scion-host", true);
+  req.onreadystatechange = function() {
+      if (req.readyState == 4) {
+        if (req.status == 200) {
+          const resp = req.responseText;
+          const hostList = resp.split('\n');
+          getSyncHosts().then(hostSet => {
+            for (const host of hostList){
+              hostSet.add(host);
+            }
+            chrome.storage.sync.set({'list': [...hostSet]}, function() {
+              console.log('Hosts from proxy:\n' + hostList);
+            });
+          });
+        }
+      }
+    };
+  req.send();
+}
+
+
+function getSyncHosts() {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get(['list'], function(result) {
+      const hostSet = new Set(result.list)
+      resolve(hostSet);
+    });
+  });
+}
+
+function updatePACScript(hostList){
+  // Receive message from popup.js when adding or removing hostname
+
+  // Transform list to string
+  let stringList = ""
+  for (const hostname of hostList){
+    stringList += "'"+ hostname + "',\n";
+  }
+
+  //PACpreamble + hosts concatenated with, + PACtemplate
+  var config = {
+    mode: "pac_script",
+    pacScript: {
+      data: PACpreamble + stringList + PACtemplate,
+    }
+  };
+  chrome.proxy.settings.set(
     {value: config, scope: 'regular'},
     function() {});
-
+}
 // Double check if the script is set correctly
-chrome.proxy.settings.get(
-  {'incognito': false},
-  function(config) {console.log(JSON.stringify(config));});
+function checkPACconfig(){
+  chrome.proxy.settings.get(
+    {'incognito': false},
+    function(config) {console.log(JSON.stringify(config));});
+}
+
+chrome.storage.onChanged.addListener((changes, namespace) =>{
+  if (namespace == 'sync' && changes.list?.newValue){
+    updatePACScript(changes.list.newValue);
+    checkPACconfig();
+  }
+})
+
+getSyncHosts().then(hostSet => {
+  console.log('Stored host list:\n' + [...hostSet]);
+  return hostSet;}).then(hostSet => {
+    updatePACScript([...hostSet]);
+    checkPACconfig();
+  });
+loadHostList();
 
 
-chrome.omnibox.onInputEntered.addListener(
-function(text) {
-  // Encode user input for special characters , / ? : @ & = + $ #
-  var newURL = 'Some SCION URL' + encodeURIComponent(text);
-  chrome.tabs.create({ url: newURL });
-});
-  

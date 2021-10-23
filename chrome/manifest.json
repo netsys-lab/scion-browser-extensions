@@ -9,22 +9,19 @@
     "storage",
     "webRequest",
     "webRequestBlocking",
-    "https://*/*"
+    "https://*/*",
+    "http://localhost/*"
   ],
   "omnibox": { "keyword" : "scion" },
-  "options_page": "options.html", 
+  "options_page": "options.html",
   "background": {
     "scripts": ["background.js"],
     "persistent": true
   },
-  "page_action": {
+  "browser_action": {
     "default_popup": "popup.html",
-    "default_icon": {
-      "16": "images/scion-0.jpg",
-      "32": "images/scion-1.jpg",
-      "48": "images/scion-2.jpg",
-      "128": "images/scion-3.jpg"
-    }
+    "default_title": "SCION extension",
+    "default_icon": "images/scion.ico"
   },
   "icons": {
     "16": "images/scion-0.jpg",
