@@ -1,3 +1,4 @@
+// Copyright 2021 ETH, Ovgu
 'use strict';
 
 let headline = document.getElementById('headline');
@@ -25,6 +26,10 @@ window.onload = function () {
   getStorageValue('extension_running').then((val) => {
     toggleRunning.checked = val;
     document.getElementById('domains-container').hidden = !toggleRunning.checked;
+    if(!val) {
+      headline.innerText = "Inactive"
+      headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
+    }
   });
 }
 

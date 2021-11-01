@@ -1,4 +1,4 @@
-// Copyright 2021 ETH
+// Copyright 2021 ETH Ovgu
 
 'use strict';
 
@@ -40,7 +40,6 @@ function loadHostList(){
 }
 
 function updatePACScript(hostList){
-  // Receive message from popup.js when adding or removing hostname
 
   // Transform list to string
   let stringList = ""
