@@ -15,19 +15,23 @@
   "omnibox": { "keyword" : "scion" },
   "options_page": "options.html",
   "background": {
-    "scripts": ["background.js"],
+    "scripts": ["shared/storage.js", "background.js"],
     "persistent": true
   },
   "browser_action": {
     "default_popup": "popup.html",
-    "default_title": "SCION extension",
-    "default_icon": "images/scion.ico"
+    "default_title": "SCION Browser extension",
+    "default_icon": {
+      "16": "/images/scion-38.jpg",
+      "24": "/images/scion-38.jpg",
+      "32": "/images/scion-38.jpg"
+    }
   },
   "icons": {
-    "16": "images/scion-0.jpg",
-    "32": "images/scion-1.jpg",
-    "48": "images/scion-2.jpg",
-    "128": "images/scion-3.jpg"
+    "16": "/images/scion-0.png",
+    "32": "/images/scion-1.png",
+    "48": "/images/scion-2.png",
+    "128": "/images/scion-3.png"
   },
   "manifest_version": 2
 }
