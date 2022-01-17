@@ -1,21 +1,165 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <style>
-      button {
-        height: 30px;
-        width: 30px;
-        outline: none;
-        margin: 10px;
-      }
+        input:checked ~ .dot {
+          transform: translateX(100%);
+          background-color: #48bb78;
+         }
     </style>
   </head>
   <body>
-    <div id="buttonDiv">
-    </div>
-    <div>
-      <p>Choose a different background color!</p>
-    </div>
+    <h3 class="text-xl font-bold mb-3 mt-3 w-100 text-center">Geofencing (ISD Selection)</h3>
+    <div class="flex justify-center mb-4 w-100">
+      <label 
+         for="toogleA"
+         class="flex items-between cursor-pointer"
+         >
+         <div class="mr-3 text-gray-700 font-medium text-sm ">
+            Allow only local ISD traffic:
+         </div>
+         <!-- toggle -->
+         <div class="relative" id="checkboxRunning">
+            <!-- input -->
+            <input id="toggleRunning" type="checkbox" class="sr-only" onchange=""/>
+            <!-- line -->
+            <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+            <!-- dot -->
+            <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+         </div>
+         <!-- label -->
+      </label>
+   </div>
+   <p></p>
+   <table class="table-auto w-full">
+    <thead class="text-xs font-semibold uppercase text-gray-400 bg-gray-50">
+        <tr>
+            <th class="p-2 whitespace-nowrap">
+                <div class="font-semibold text-left">ISD</div>
+            </th>
+            <th class="p-2 whitespace-nowrap">
+                <div class="font-semibold text-left">Region</div>
+            </th>
+            <th class="p-2 whitespace-nowrap">
+                <div class="font-semibold text-left">Allowed</div>
+            </th>
+        </tr>
+    </thead>
+    <tbody class="text-sm divide-y divide-gray-100">
+        <tr>
+            <td class="p-2 whitespace-nowrap">
+              <div class="text-left">19</div>
+          </td>
+            <td class="p-2 whitespace-nowrap">
+                <div class="text-left">EU</div>
+            </td>
+            <td class="p-2 whitespace-nowrap">
+                <div class="text-left font-medium">
+                   <!-- toggle -->
+                  <div class="relative" id="checkboxRunning">
+                    <!-- input -->
+                    <input id="toggleRunning" type="checkbox" class="sr-only" onchange="" checked/>
+                    <!-- line -->
+                    <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                    <!-- dot -->
+                    <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+                </div>
+                <!-- label -->
+                </div>
+            </td>
+        </tr>
+        <tr>
+          <td class="p-2 whitespace-nowrap">
+            <div class="text-left">17</div>
+        </td>
+          <td class="p-2 whitespace-nowrap">
+              <div class="text-left">Switzerland</div>
+          </td>
+          <td class="p-2 whitespace-nowrap">
+              <div class="text-left font-medium">
+                 <!-- toggle -->
+                <div class="relative" id="checkboxRunning">
+                  <!-- input -->
+                  <input id="toggleRunning" type="checkbox" class="sr-only" onchange="" checked/>
+                  <!-- line -->
+                  <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                  <!-- dot -->
+                  <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+              </div>
+              <!-- label -->
+              </div>
+          </td>
+      </tr>
+      <tr>
+        <td class="p-2 whitespace-nowrap">
+          <div class="text-left">18</div>
+      </td>
+        <td class="p-2 whitespace-nowrap">
+            <div class="text-left">North America</div>
+        </td>
+        <td class="p-2 whitespace-nowrap">
+            <div class="text-left font-medium">
+               <!-- toggle -->
+              <div class="relative" id="checkboxRunning">
+                <!-- input -->
+                <input id="toggleRunning" type="checkbox" class="sr-only" onchange="" checked />
+                <!-- line -->
+                <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                <!-- dot -->
+                <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+            </div>
+            <!-- label -->
+            </div>
+        </td>
+    </tr>
+    <tr>
+      <td class="p-2 whitespace-nowrap">
+        <div class="text-left">16</div>
+    </td>
+      <td class="p-2 whitespace-nowrap">
+          <div class="text-left">AWS</div>
+      </td>
+      <td class="p-2 whitespace-nowrap">
+          <div class="text-left font-medium">
+             <!-- toggle -->
+            <div class="relative" id="checkboxRunning">
+              <!-- input -->
+              <input id="toggleRunning" type="checkbox" class="sr-only" onchange=""/>
+              <!-- line -->
+              <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+              <!-- dot -->
+              <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+          </div>
+          <!-- label -->
+          </div>
+      </td>
+  </tr>
+  <tr>
+    <td class="p-2 whitespace-nowrap">
+      <div class="text-left">20</div>
+  </td>
+    <td class="p-2 whitespace-nowrap">
+        <div class="text-left">Korea</div>
+    </td>
+    <td class="p-2 whitespace-nowrap">
+        <div class="text-left font-medium">
+           <!-- toggle -->
+          <div class="relative" id="checkboxRunning">
+            <!-- input -->
+            <input id="toggleRunning" type="checkbox" class="sr-only" onchange=""/>
+            <!-- line -->
+            <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+            <!-- dot -->
+            <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+        </div>
+        <!-- label -->
+        </div>
+    </td>
+</tr>
+        
+    </tbody>
+</table>
   </body>
   <script src="options.js"></script>
 </html>
