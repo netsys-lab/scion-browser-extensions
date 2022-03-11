@@ -66,20 +66,21 @@ function checkPACconfig(){
 }
 
 function geofence(isdList){
-  // Transform list to string
-  let stringList = ""
+  let whiteArray = new Array()
   for (const isd of isdList){
-    stringList += isd + ",";
+    whiteArray.push("+ " + isd);
   }
+  whiteArray.push("-")
+
   var req = new XMLHttpRequest();
   req.open("PUT", "http://localhost:8888/setISDPolicy", true);
-  req.setRequestHeader('Content-type','application/raw; charset=utf-8');
+  req.setRequestHeader('Content-type','application/json; charset=utf-8');
   req.onreadystatechange = function() {
       if (req.readyState == 4) {
         console.log("Response code to setISDPolicy:" + req.status);
       }
   };
-  req.send(stringList);
+  req.send(JSON.stringify(whiteArray));
 }
 
 chrome.storage.onChanged.addListener((changes, namespace) =>{

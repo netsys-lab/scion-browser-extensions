@@ -17,7 +17,7 @@ function displayToggleISD(isdSet){
     for (const id of isdSet){
         var isdToggle = document.getElementById(placeholderToggleID + id);
         if(isdToggle) {
-            isdToggle.checked = true;    
+            isdToggle.checked = true;
         }
     }
 }
@@ -40,38 +40,6 @@ function toggleISD(checked_id){
     applyWhitelist(id, isdToggle.checked);
 }
 
-// function applyWhitelist(){
-//     var isds = document.getElementsByClassName("isd-entry");
-//     let isdWhiteList = new Array()
-//     for(var i = 0; i < isds.length; i++) {
-//        if (isds[i].getAttribute("checked")){
-//            // push isd number
-//        }
-//     }
-//     saveGeofence(isdWhiteList);
-// }
-
-
-function geofence(isdList){
-    // Transform list to string
-    let stringList = ""
-    for (const isd of isdList){
-      stringList += isd + ",";
-    }
-
-    var req = new XMLHttpRequest();
-    req.open("PUT", "http://localhost:8888/setISDPolicy", true);
-    req.setRequestHeader('Content-type','application/raw; charset=utf-8');
-    req.onreadystatechange = function() {
-        if (req.readyState == 4) {
-          if (req.status == 200) {
-            const resp = req.responseText;
-            console.log("Response from SKIP: " + resp);
-            }
-        }
-    };
-    req.send(stringList);
-  }
 
 async function applyWhitelist(isd, checked){
     const isdList = await getStorageValue('isd_whitelist');
@@ -86,7 +54,6 @@ async function applyWhitelist(isd, checked){
     const isdSet_1 = isdSet;
     await saveStorageValue('isd_whitelist', [...isdSet_1]);
     console.log([...isdSet_1]);
-    geofence([...isdSet_1]);        
 }
 
 function removeEmptyEntries(list) {
