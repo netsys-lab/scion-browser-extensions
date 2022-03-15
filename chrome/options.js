@@ -4,18 +4,58 @@
 // Copyright 2021 ETH, Ovgu
 'use strict';
 
-let page = document.getElementById('buttonDiv');
-const kButtonColors = ['#3aa757', '#e8453c', '#f9bb2d', '#4688f1'];
-function constructOptions(kButtonColors) {
-  for (let item of kButtonColors) {
-    let button = document.createElement('button');
-    button.style.backgroundColor = item;
-    button.addEventListener('click', function() {
-      chrome.storage.sync.set({color: item}, function() {
-        console.log('color is ' + item);
-      })
-    });
-    page.appendChild(button);
-  }
+const placeholderToggleID = "toggleISD-"
+
+window.onload = function () {
+    getStorageValue('isd_whitelist').then((isdSet) => {
+        displayToggleISD(isdSet);
+      });
+      registerToggleISDHandler();
 }
-constructOptions(kButtonColors);
+
+function displayToggleISD(isdSet){
+    for (const id of isdSet){
+        var isdToggle = document.getElementById(placeholderToggleID + id);
+        if(isdToggle) {
+            isdToggle.checked = true;
+        }
+    }
+}
+
+function registerToggleISDHandler() {
+    const idsToggles = document.getElementsByClassName("isd-entry");
+    for (let i = 0; i < idsToggles.length; i++) {
+        const parentDiv = idsToggles[i].parentElement;
+        parentDiv.onclick = () => {
+            toggleISD(idsToggles[i].id);
+        }
+    }
+};
+
+
+function toggleISD(checked_id){
+    var isdToggle = document.getElementById(checked_id);
+    isdToggle.checked = !isdToggle.checked;
+    var id = checked_id.split("toggleISD-")[1];
+    applyWhitelist(id, isdToggle.checked);
+}
+
+
+async function applyWhitelist(isd, checked){
+    const isdList = await getStorageValue('isd_whitelist');
+    const isdSet = await toSet(removeEmptyEntries(isdList));
+    if (checked) {
+        isdSet.add(isd);
+        console.log('Added isd to list: ' + isd);
+    } else {
+        isdSet.delete(isd);
+        console.log('Delete isd to list: ' + isd);
+    }
+    const isdSet_1 = isdSet;
+    await saveStorageValue('isd_whitelist', [...isdSet_1]);
+    console.log([...isdSet_1]);
+}
+
+function removeEmptyEntries(list) {
+    return list.filter(l => !!l);
+}

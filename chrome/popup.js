@@ -73,6 +73,9 @@ document.getElementById('button-delete-hostname')
             });
 
 function displayHostList(hostList){
+  if (!hostList) {
+    return;
+  }
   document.getElementById('output').innerHTML = ""
   for(var i=0; i < hostList.length; i++){
     document.getElementById('output')
@@ -101,3 +104,13 @@ function deleteHosts(hostlist){
     return hostSet;
   });
 }
+
+function openOptions() {
+  
+}
+
+
+document.getElementById('button-options')
+            .addEventListener('click', function() {
+              chrome.tabs.create({ 'url': 'chrome://extensions/?options=' + chrome.runtime.id });
+          });
