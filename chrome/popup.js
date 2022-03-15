@@ -6,8 +6,19 @@ let toggleRunning = document.getElementById('toggleRunning');
 let checkboxRunning = document.getElementById('checkboxRunning');
 
 window.onload = function () {
+
   // Update host list in popup
   getStorageValue('list').then((hostSet) => {
+    if(!hostSet) {
+      hostSet = [
+        "www.scionlab.org",
+        "www.scionlab.chat",
+        "www.scion-pathguess.game"
+      ];
+      saveStorageValue('list', [...hostSet]).then(() => {
+        console.log('Initialized hosts');
+      })
+    }
     displayHostList(hostSet); 
   });
 

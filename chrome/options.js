@@ -14,6 +14,9 @@ window.onload = function () {
 }
 
 function displayToggleISD(isdSet){
+    if(!isdSet) {
+        return;
+    }
     for (const id of isdSet){
         var isdToggle = document.getElementById(placeholderToggleID + id);
         if(isdToggle) {
