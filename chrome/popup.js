@@ -125,3 +125,51 @@ document.getElementById('button-options')
             .addEventListener('click', function() {
               chrome.tabs.create({ 'url': 'chrome://extensions/?options=' + chrome.runtime.id });
           });
+
+  document.getElementById('button-open-in-scion')
+    .addEventListener('click', function() {
+      // get current tab
+      chrome.tabs.query({active: true, currentWindow: true}).then(tabs => {
+
+        // since only one tab should be active and in the current window at once
+        // the return variable should only have one entry
+        var activeTab = tabs[0];
+        var activeTabId = activeTab.id; // or do whatever you need
+
+        chrome.tabGroups.query({
+          title: 'SCION',
+        }).then(groups => {
+          if(groups && groups.length > 0 && groups[0]) {
+            // get groups, filter by SCION
+            chrome.tabs.group({ 
+                groupId: groups[0].id,
+                tabIds: [activeTabId],
+            }, (result) => {
+              console.warn(result);
+            });
+          } else {
+            chrome.tabs.group({
+              tabIds: [activeTabId],
+          }, (result) => {
+            console.warn(result);
+            chrome.tabGroups.query({
+            }).then(groups2 => {
+              console.warn(groups2);
+              const group = groups2.find(g => g.title === null || g.title === "");
+              if (group) {
+                console.warn(group);
+                chrome.tabGroups.update(group.id, {
+                  title: "SCION",
+                  color: "blue"
+                });
+              }
+            });
+          });
+          }
+        })
+
+       
+     });
+
+      
+  });
