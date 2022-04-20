@@ -60,5 +60,8 @@ async function applyWhitelist(isd, checked){
 }
 
 function removeEmptyEntries(list) {
+    if(!list) {
+        return list;
+    }
     return list.filter(l => !!l);
 }

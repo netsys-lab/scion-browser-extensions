@@ -73,7 +73,7 @@ function geofence(isdList){
   whiteArray.push("-")
 
   var req = new XMLHttpRequest();
-  req.open("PUT", "http://localhost:8888/setISDPolicy", true);
+  req.open("PUT", "http://localhost:8888/setPolicy", true);
   req.setRequestHeader('Content-type','application/json; charset=utf-8');
   req.onreadystatechange = function() {
       if (req.readyState == 4) {
