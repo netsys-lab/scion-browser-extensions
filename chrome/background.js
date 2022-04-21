@@ -17,7 +17,7 @@ var PACtemplate =
 
 function loadHostList(){
   var req = new XMLHttpRequest();
-  req.open("GET", "http://localhost:8888/scion-host", true);
+  req.open("GET", "http://localhost:8888/scionHosts", true);
   req.onreadystatechange = function() {
       if (req.readyState == 4) {
         if (req.status == 200) {
