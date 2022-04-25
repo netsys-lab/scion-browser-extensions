@@ -1,0 +1,38 @@
+{
+  "name": "SCION Browser Extension",
+  "version": "1.0",
+  "description": "Build an Extension!",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "<all_urls>",
+    "cookies",
+    "contextualIdentities",
+    "proxy",
+    "storage",
+    "webRequest"
+  ],
+  "omnibox": { "keyword" : "scion" },
+  "options_ui": {
+    "page": "options.html"
+  },
+  "background": {
+    "scripts": ["background.js", "proxified-containers.js"]
+  },
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_title": "SCION Browser extension",
+    "default_icon": {
+      "16": "/images/scion-38.jpg",
+      "24": "/images/scion-38.jpg",
+      "32": "/images/scion-38.jpg"
+    }
+  },
+  "icons": {
+    "16": "/images/scion-0.png",
+    "32": "/images/scion-1.png",
+    "48": "/images/scion-2.png",
+    "128": "/images/scion-3.png"
+  },
+  "manifest_version": 2
+}
