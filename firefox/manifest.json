@@ -17,7 +17,7 @@
     "page": "options.html"
   },
   "background": {
-    "scripts": ["background.js", "proxified-containers.js"]
+    "scripts": ["background.js"]
   },
   "browser_action": {
     "default_popup": "popup.html",
@@ -34,5 +34,6 @@
     "48": "/images/scion-2.png",
     "128": "/images/scion-3.png"
   },
+  "content_security_policy": "script-src 'self'; object-src 'none'",
   "manifest_version": 2
 }

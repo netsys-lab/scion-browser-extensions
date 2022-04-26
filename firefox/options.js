@@ -4,6 +4,30 @@
 // Copyright 2021 ETH, Ovgu
 'use strict';
 
+
+function saveStorageValue(key, value) {
+    return new Promise((resolve, reject) => {
+      console.log("save")
+      browser.storage.local.set({[key]: value}, function() {
+        resolve();
+      });
+    });
+  }
+
+  function getStorageValue(key) {
+    return new Promise((resolve, reject) => {
+        browser.storage.local.get([key], function(result) {
+        resolve(result[key]);
+      });
+    });
+  }
+
+  function toSet(key) {
+      return new Promise(resolve => {
+        resolve(new Set(key));
+      });
+  }
+
 const placeholderToggleID = "toggleISD-"
 
 window.onload = function () {
@@ -45,7 +69,9 @@ function toggleISD(checked_id){
 
 
 async function applyWhitelist(isd, checked){
+    console.log("whitelist")
     const isdList = await getStorageValue('isd_whitelist');
+    console.log("whitelist-2")
     const isdSet = await toSet(removeEmptyEntries(isdList));
     if (checked) {
         isdSet.add(isd);

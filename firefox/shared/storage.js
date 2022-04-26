@@ -3,6 +3,7 @@
 
 function saveStorageValue(key, value) {
     return new Promise((resolve, reject) => {
+      console.log("save")
       chrome.storage.sync.set({[key]: value}, function() {
         resolve();
       });

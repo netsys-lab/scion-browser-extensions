@@ -147,11 +147,10 @@ function geofence(isdList){
   fetch("http://localhost:8888/setPolicy", {
     method: "PUT",
     body: JSON.stringify(whiteArray),
-    mode: "no-cors",
     headers: {
       'Content-type': 'application/json; charset=utf-8'
     }
-  }).then(() => { 
+  }).then(() => {
     console.log("Geofence successful")
   }).catch((e) => {
     console.warn("Geofence failed")
@@ -231,7 +230,7 @@ function handleTabChange(tab) {
     updatePACScript(new Set());
     checkPACconfig();
   }
-  
+
   // check if the browser extension is running before doing anything
   /*getStorageValue('extension_running').then(extensionRunning => {
     if(extensionRunning) {
