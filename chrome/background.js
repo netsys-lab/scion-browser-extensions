@@ -15,29 +15,6 @@ var PACtemplate =
         "return 'DIRECT';\n" +
       "}"
 
-function loadHostList(){
-  var req = new XMLHttpRequest();
-  req.open("GET", "http://localhost:8888/scionHosts", true);
-  req.onreadystatechange = function() {
-      if (req.readyState == 4) {
-        if (req.status == 200) {
-          const resp = req.responseText;
-          const hostList = resp.split('\n');
-          getStorageValue('list').then(toSet).then(hostSet => {
-            for (const host of hostList){
-              hostSet.add(host);
-            }
-            chrome.storage.sync.set({'list': [...hostSet]}, function() {
-              console.log('Hosts from proxy:\n' + hostList);
-              updatePACScript([...hostSet]);
-              checkPACconfig();
-            });
-          });
-        }
-      }
-    };
-  req.send();
-}
 
 function updatePACScript(hostList){
 
@@ -107,8 +84,6 @@ chrome.storage.onChanged.addListener((changes, namespace) =>{
   }
 })
 
-loadHostList();
-
 // Displays a green/blue SCION icon depending on the current url is
 // being forwarded via SCION
 function handleTabChange(tab) {
@@ -162,3 +137,44 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
     handleTabChange(tab);
   });
 });
+
+
+chrome.webRequest.onBeforeRequest.addListener(
+  handleProxifiedRequest, {urls: ["<all_urls>"]}, ['blocking']);
+
+function handleProxifiedRequest(requestInfo) {
+  console.log("request" + JSON.stringify(requestInfo));
+
+  let url = new URL(requestInfo.url)
+
+  if (url.hostname == "localhost"){
+    return {}
+  }
+
+  fetch("http://localhost:8888/resolve?host="+url.hostname, {
+    method: "GET"
+  }).then(response => {
+    if(response.status === 200) {
+      response.text().then(res =>{
+        if (res != ""){
+          console.log(res)
+          addHost(url.hostname)
+        }
+      })
+    }
+  }).catch(() => {
+    console.warn("Resolution failed")
+  })
+
+  return{}
+}
+
+function addHost(host){
+  return getStorageValue('list').then(toSet).then(hostSet => {
+    hostSet.add(host);
+    saveStorageValue('list', [...hostSet]).then(() => {
+      console.log('Added host: ' + host);
+    })
+    return hostSet;
+  });
+}

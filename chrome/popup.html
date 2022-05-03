@@ -21,7 +21,7 @@
    <body>
       <h3 class="text-lg font-bold mb-3 mt-3">SCION Browser Extension</h3>
       <div class="flex justify-center mb-4">
-         <label 
+         <label
             for="toogleA"
             class="flex items-center cursor-pointer"
             >
@@ -41,25 +41,8 @@
          </label>
       </div>
       <div class="flex justify-center mb-4"><span class="text-sm mr-1 text-gray-700 font-medium">SCION forwarding:</span> <span id="headline" class="inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3">Inactive</span></div>
-      <hr >
-      <div id="domains-container">
-         <h3 class="text-base font-bold mt-2">SCION enabled domains</h3>
-         <div class="flex flex-col items-center mb-3" id=output>
-            <!-- TEXT showing urls in persistance -->
-         </div>
-         <div class="flex mb-2 justify-center">
-            <input type="text" id="input-hostname" class="px-2 py-1 mr-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200">
-            <button class="px-2 py-1 rounded-md text-sm font-medium border-0 focus:outline-none focus:ring transition text-blue-600 bg-blue-50 hover:text-blue-800 hover:bg-blue-100 active:bg-blue-200 focus:ring-blue-300" id="button-write-hostname">Add Domain</button>
-         </div>
-         <div class="flex mb-2 justify-center">
-            <button class="px-2 py-1 rounded-md text-sm font-medium border-0 focus:outline-none focus:ring transition text-red-600 bg-red-50 hover:text-red-800 hover:bg-red-100 active:bg-red-200 focus:ring-red-300" id="button-delete-hostname">Delete Selected</button>
-         </div>
-      </div>
-      <hr >
-      <div class="flex justify-center mb-2 mt-2">
-         <button class="px-2 py-1 rounded-md text-sm font-medium border-0 focus:outline-none focus:ring transition text-blue-600 bg-blue-50 hover:text-blue-800 hover:bg-blue-100 active:bg-blue-200 focus:ring-blue-300" id="button-options">Options</button>
-      </div>
-     
+
+
       <script src="shared/storage.js"></script>
       <script src="popup.js"></script>
    </body>

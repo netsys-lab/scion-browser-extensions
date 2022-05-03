@@ -8,19 +8,19 @@ let checkboxRunning = document.getElementById('checkboxRunning');
 window.onload = function () {
 
   // Update host list in popup
-  getStorageValue('list').then((hostSet) => {
-    if(!hostSet) {
-      hostSet = [
-        "www.scionlab.org",
-        "www.scionlab.chat",
-        "www.scion-pathguess.game"
-      ];
-      saveStorageValue('list', [...hostSet]).then(() => {
-        console.log('Initialized hosts');
-      })
-    }
-    displayHostList(hostSet); 
-  });
+  // getStorageValue('list').then((hostSet) => {
+  //   if(!hostSet) {
+  //     hostSet = [
+  //       "www.scionlab.org",
+  //       "www.scionlab.chat",
+  //       "www.scion-pathguess.game"
+  //     ];
+  //     saveStorageValue('list', [...hostSet]).then(() => {
+  //       console.log('Initialized hosts');
+  //     })
+  //   }
+  //   displayHostList(hostSet);
+  // });
 
   // Update Forwarding badge depending on storage settings
   getStorageValue('forwarding_enabled').then(isForwardingEnabled => {
@@ -36,7 +36,7 @@ window.onload = function () {
   // Load extension running value and remove other settings in case its not running
   getStorageValue('extension_running').then((val) => {
     toggleRunning.checked = val;
-    document.getElementById('domains-container').hidden = !toggleRunning.checked;
+  //  document.getElementById('domains-container').hidden = !toggleRunning.checked;
     if(!val) {
       headline.innerText = "Inactive"
       headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
@@ -117,7 +117,7 @@ function deleteHosts(hostlist){
 }
 
 function openOptions() {
-  
+
 }
 
 
