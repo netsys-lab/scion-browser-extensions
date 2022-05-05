@@ -2,6 +2,25 @@
 
 'use strict';
 
+// This is a bit hacky but probably easier than wrapping everything
+// in a bunder step
+const imports = [
+  'database.js'
+];
+
+var getRequestsDatabaseAdapter;
+
+// TODO: if there are some race conditions, add a startup
+// function that is called manually after all scripts are loaded
+// Let's later move to something that allows using imports and
+// maybe even typescript, e.g. https://github.com/abhijithvijayan/web-extension-starter
+(async () => {
+    const src = chrome.extension.getURL('database.js');
+    const req = await import(src);
+    getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;  
+})();
+// contentScript.main(/* chrome: no need to pass it */);
+
 /**
  * This is the starting point to insert the existing PAC script of the current implementation
  */
@@ -86,27 +105,48 @@ chrome.storage.onChanged.addListener((changes, namespace) =>{
 
 // Displays a green/blue SCION icon depending on the current url is
 // being forwarded via SCION
-function handleTabChange(tab) {
+async function handleTabChange(tab) {
   // check if the browser extension is running before doing anything
-  getStorageValue('extension_running').then(extensionRunning => {
-    if(extensionRunning) {
+  // getStorageValue('extension_running').then(extensionRunning => {
+  //  if(extensionRunning) {
       // Active tab needs to check if we have scion_forwarding enabled or not
+      
       if (tab.active && tab.url) {
-        const { hostname } = new URL(tab.url);
-        getStorageValue('list').then(toSet).then(hostSet => {
-          if (hostSet.has(hostname)) {
-            saveStorageValue('forwarding_enabled', true);
-            chrome.browserAction.setIcon({path: "/images/scion-38_enabled.jpg"});
-          } else {
-            saveStorageValue('forwarding_enabled', false);
-            chrome.browserAction.setIcon({path: "/images/scion-38.jpg"});
+        const url = new URL(tab.url);
+        const databaseAdapter = await getRequestsDatabaseAdapter();
+        let requests = await databaseAdapter.get({mainDomain: url.hostname});
+        var mixedContent;
+        
+        const mainDomainSCIONEnabled = requests.find(r => r.tabId === tab.id && r.domain === url.hostname && r.scionEnabled);
+        requests.forEach(r => {
+          if(!r.scionEnabled) {
+              mixedContent = true;
           }
         });
+        if(mainDomainSCIONEnabled) {
+          if(mixedContent) {
+            chrome.browserAction.setIcon({path: "/images/scion-38_mixed.jpg"});
+          } else {
+            chrome.browserAction.setIcon({path: "/images/scion-38_enabled.jpg"});
+          }
+        } else {
+          chrome.browserAction.setIcon({path: "/images/scion-38_not_available.jpg"});
+        } 
       }
-    }
-  });
-
+    //  }
+    // }
+  // });
 }
+
+chrome.tabs.onUpdated.addListener(function
+  (tabId, changeInfo, tab) {
+    // read changeInfo data and do something with it (like read the url)
+    if (changeInfo.url) {
+      handleTabChange(tab);
+
+    }
+  }
+);
 
 // Update icons and forwarding_enabled field depending on hostname of
 // current active tab
@@ -145,24 +185,49 @@ chrome.webRequest.onBeforeRequest.addListener(
 function handleProxifiedRequest(requestInfo) {
   console.log("request" + JSON.stringify(requestInfo));
 
-  let url = new URL(requestInfo.url)
+  let url = new URL(requestInfo.url);
 
   if (url.hostname == "localhost"){
     return {}
   }
 
+  if(requestInfo.url.indexOf("chrome-extension") >= 0) {
+    return {}
+  }
+
+  if(requestInfo.initiator.indexOf("chrome-extension") >= 0) {
+    return {}
+  }
+
+  const requestDBEntry = {
+    requestId: requestInfo.requestId,
+    tabId: requestInfo.tabId,
+    domain: url.hostname,
+    mainDomain: new URL(requestInfo.initiator).hostname,
+  };
+
+
   fetch("http://localhost:8888/resolve?host="+url.hostname, {
     method: "GET"
   }).then(response => {
-    if(response.status === 200) {
-      response.text().then(res =>{
-        if (res != ""){
-          console.log(res)
-          addHost(url.hostname)
-        }
-      })
-    }
-  }).catch(() => {
+     // TODO: If we move to e.g. IndexedDB, ensure not to open 
+    // a new connection here...
+    console.warn("TEST");
+    getRequestsDatabaseAdapter().then(databaseAdapter => {
+      if(response.status === 200) {
+        response.text().then(res =>{
+          if (res != ""){
+            requestDBEntry.scionEnabled = true;
+            console.log(res)
+            addHost(url.hostname)
+          }
+        });
+      }
+      databaseAdapter.add(requestDBEntry);
+
+      }); 
+  }).catch((e) => {
+    debugger;
     console.warn("Resolution failed")
   })
 

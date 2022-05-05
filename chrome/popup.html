@@ -18,15 +18,19 @@
          }
       </style>
    </head>
-   <body>
-      <h3 class="text-lg font-bold mb-3 mt-3">SCION Browser Extension</h3>
+   <body style="padding: 1em;">
+      <h3 id="scionsupport" class="text-lg text-left font-bold mb-3 mt-3"></h3>
+      <div id="domainlist" class="w-100 mb-4">
+
+      </div>
+      <hr />
       <div class="flex justify-center mb-4">
          <label
             for="toogleA"
             class="flex items-center cursor-pointer"
             >
-            <div class="mr-3 text-gray-700 font-medium text-sm ">
-               Extension Running:
+            <div id="maindomain" class="mr-3 text-gray-700 font-medium text-sm ">
+               
             </div>
             <!-- toggle -->
             <div class="relative" id="checkboxRunning">
@@ -40,8 +44,7 @@
             <!-- label -->
          </label>
       </div>
-      <div class="flex justify-center mb-4"><span class="text-sm mr-1 text-gray-700 font-medium">SCION forwarding:</span> <span id="headline" class="inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3">Inactive</span></div>
-
+      <div class="d-none hidden flex justify-center mb-4"><span class="text-sm mr-1 text-gray-700 font-medium">SCION forwarding:</span> <span id="headline" class="inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3">Inactive</span></div>
 
       <script src="shared/storage.js"></script>
       <script src="popup.js"></script>

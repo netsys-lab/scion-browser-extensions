@@ -1,6 +1,7 @@
 // Copyright 2021 ETH, Ovgu
 'use strict';
 
+
 let headline = document.getElementById('headline');
 let toggleRunning = document.getElementById('toggleRunning');
 let checkboxRunning = document.getElementById('checkboxRunning');
@@ -54,7 +55,7 @@ function toggleExtensionRunning () {
 }
 checkboxRunning.onclick = toggleExtensionRunning;
 
-
+/*
 
 document.getElementById('button-write-hostname')
             .addEventListener('click', function() {
@@ -82,7 +83,7 @@ document.getElementById('button-delete-hostname')
                 return hostSet;
               })
             });
-
+*/
 function displayHostList(hostList){
   if (!hostList) {
     return;
@@ -120,8 +121,78 @@ function openOptions() {
 
 }
 
-
+/*
 document.getElementById('button-options')
             .addEventListener('click', function() {
               chrome.tabs.create({ 'url': 'chrome://extensions/?options=' + chrome.runtime.id });
           });
+*/
+
+var getRequestsDatabaseAdapter;
+async function loadRequestInfo() {
+  const databaseAdapter = await getRequestsDatabaseAdapter();
+
+  
+  const domainList = document.getElementById("domainlist");
+  const checkedDomains = [];
+  chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
+    var activeTab = tabs[0];  
+    var activeTabId = activeTab.id; // or do whatever you need
+    const url = new URL(activeTab.url);
+    let requests = await databaseAdapter.get({mainDomain: url.hostname});
+    console.error(requests);
+    const mainDomainSCIONEnabled = requests.find(r => r.tabId === activeTabId && r.domain === url.hostname && r.scionEnabled);
+    const mainDomain = document.getElementById("maindomain");
+    const scionsupport = document.getElementById("scionsupport");
+    const toggleRunning = document.getElementById("toggleRunning");
+    if(mainDomainSCIONEnabled) {
+      mainDomain.innerHTML = "SCION enabled for " + url.hostname;
+      toggleRunning.checked = true;
+    } else {
+      mainDomain.innerHTML = "SCION disabled for " + url.hostname;
+      toggleRunning.checked = false;
+    }
+    requests = requests.filter(r => r.tabId === activeTabId);
+    let mixedContent = false;
+    requests.forEach(r => {
+      if(!checkedDomains.find(d => d === r.domain)) {
+        checkedDomains.push(r.domain);
+        let p = document.createElement("p");
+        p.style.fontSize = "14px"
+        if(r.scionEnabled) {
+          p.innerHTML = "<span>&#x2705;</span> " + r.domain;
+        } else {
+          mixedContent = true;
+          p.innerHTML = "<span>&#x274C;</span> " + r.domain;
+        }
+
+        domainList.appendChild(p);
+      }
+    });
+    if(mainDomainSCIONEnabled) {
+      if(mixedContent) {
+        scionsupport.innerHTML = "Not all resources loaded via SCION";
+      } else {
+        scionsupport.innerHTML = "All resources loaded via SCION";
+      }
+    } else {
+      scionsupport.innerHTML = "No resourced loaded via SCION";
+    } 
+  });
+  
+}
+
+
+
+// TODO: if there are some race conditions, add a startup
+// function that is called manually after all scripts are loaded
+// Let's later move to something that allows using imports and
+// maybe even typescript, e.g. https://github.com/abhijithvijayan/web-extension-starter
+(() => {
+    const src = chrome.extension.getURL('database.js');
+    import(src).then(req => {
+      getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
+      loadRequestInfo();
+    })
+    
+})();
