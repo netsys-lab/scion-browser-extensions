@@ -17,7 +17,7 @@ var getRequestsDatabaseAdapter;
 (async () => {
     const src = chrome.extension.getURL('database.js');
     const req = await import(src);
-    getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;  
+    getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
 })();
 // contentScript.main(/* chrome: no need to pass it */);
 
@@ -34,6 +34,19 @@ var PACtemplate =
         "return 'DIRECT';\n" +
       "}"
 
+var config = {
+  mode: "pac_script",
+  pacScript: {
+    data: "function FindProxyForURL(url, host) {\n" +
+    "    return 'PROXY localhost:8888';\n" +
+    "}",
+  }
+};
+chrome.proxy.settings.set(
+  {value: config, scope: 'regular'},
+  function() {});
+
+checkPACconfig();
 
 function updatePACScript(hostList){
 
@@ -81,20 +94,20 @@ function geofence(isdList){
 
 chrome.storage.onChanged.addListener((changes, namespace) =>{
   if (namespace == 'sync' && changes.list?.newValue){
-    updatePACScript(changes.list.newValue);
-    checkPACconfig();
+    //updatePACScript(changes.list.newValue);
+    // checkPACconfig();
   }
   // In case we disable running for the extension, lets put an empty set for now
   // Later, we could remove the PAC script, but doesn't impact us now...
   else if (namespace == 'sync' && changes.extension_running?.newValue !== undefined){
     if(changes.extension_running.newValue) {
       getStorageValue('list').then(toSet).then(hostSet => {
-        updatePACScript(hostSet);
-        checkPACconfig();
+        // updatePACScript(hostSet);
+        // checkPACconfig();
       });
     } else {
-        updatePACScript(new Set());
-        checkPACconfig();
+        // updatePACScript(new Set());
+        // checkPACconfig();
     }
     updateRunningIcon(changes.extension_running.newValue);
   }
@@ -110,13 +123,13 @@ async function handleTabChange(tab) {
   // getStorageValue('extension_running').then(extensionRunning => {
   //  if(extensionRunning) {
       // Active tab needs to check if we have scion_forwarding enabled or not
-      
+
       if (tab.active && tab.url) {
         const url = new URL(tab.url);
         const databaseAdapter = await getRequestsDatabaseAdapter();
         let requests = await databaseAdapter.get({mainDomain: url.hostname});
         var mixedContent;
-        
+
         const mainDomainSCIONEnabled = requests.find(r => r.tabId === tab.id && r.domain === url.hostname && r.scionEnabled);
         requests.forEach(r => {
           if(!r.scionEnabled) {
@@ -131,7 +144,7 @@ async function handleTabChange(tab) {
           }
         } else {
           chrome.browserAction.setIcon({path: "/images/scion-38_not_available.jpg"});
-        } 
+        }
       }
     //  }
     // }
@@ -210,7 +223,7 @@ function handleProxifiedRequest(requestInfo) {
   fetch("http://localhost:8888/resolve?host="+url.hostname, {
     method: "GET"
   }).then(response => {
-     // TODO: If we move to e.g. IndexedDB, ensure not to open 
+     // TODO: If we move to e.g. IndexedDB, ensure not to open
     // a new connection here...
     console.warn("TEST");
     getRequestsDatabaseAdapter().then(databaseAdapter => {
@@ -225,7 +238,7 @@ function handleProxifiedRequest(requestInfo) {
       }
       databaseAdapter.add(requestDBEntry);
 
-      }); 
+      });
   }).catch((e) => {
     debugger;
     console.warn("Resolution failed")
