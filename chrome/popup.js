@@ -5,6 +5,8 @@
 let headline = document.getElementById('headline');
 let toggleRunning = document.getElementById('toggleRunning');
 let checkboxRunning = document.getElementById('checkboxRunning');
+var perSiteStrictMode = {};
+var popupMainDomain;
 
 window.onload = function () {
 
@@ -25,7 +27,7 @@ window.onload = function () {
 
   // Update Forwarding badge depending on storage settings
   getStorageValue('forwarding_enabled').then(isForwardingEnabled => {
-    if(isForwardingEnabled) {
+    if (isForwardingEnabled) {
       headline.innerText = "Active"
       headline.className = "inline-block rounded-full text-white bg-green-500 px-2 py-1 text-xs font-bold mr-3";
     } else {
@@ -36,9 +38,9 @@ window.onload = function () {
 
   // Load extension running value and remove other settings in case its not running
   getStorageValue('extension_running').then((val) => {
-    toggleRunning.checked = val;
-  //  document.getElementById('domains-container').hidden = !toggleRunning.checked;
-    if(!val) {
+    toggleRunning.checked = false;// val;
+    //  document.getElementById('domains-container').hidden = !toggleRunning.checked;
+    if (!val) {
       headline.innerText = "Inactive"
       headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
     }
@@ -46,10 +48,24 @@ window.onload = function () {
 }
 
 // Start/Stop global forwarding
-function toggleExtensionRunning () {
-  toggleRunning.checked = !toggleRunning.checked
-  saveStorageValue('extension_running',toggleRunning.checked).then(() => {
-    document.getElementById('domains-container').hidden = !toggleRunning.checked;
+function toggleExtensionRunning() {
+
+  toggleRunning.checked = !toggleRunning.checked;
+  const mainDomain = document.getElementById("maindomain");
+  const newPerSiteStrictMode = {
+    ...perSiteStrictMode,
+    [popupMainDomain]: toggleRunning.checked,
+  };
+
+  if (toggleRunning.checked) {
+    mainDomain.innerHTML = "Strict mode enabled for " + popupMainDomain;
+  } else {
+    mainDomain.innerHTML = "Strict mode disabled for " + popupMainDomain;
+  }
+
+  saveStorageValue('perSiteStrictMode', newPerSiteStrictMode).then(() => {
+    debugger;
+    perSiteStrictMode = newPerSiteStrictMode;
   });
 
 }
@@ -84,18 +100,18 @@ document.getElementById('button-delete-hostname')
               })
             });
 */
-function displayHostList(hostList){
+function displayHostList(hostList) {
   if (!hostList) {
     return;
   }
   document.getElementById('output').innerHTML = ""
-  for(var i=0; i < hostList.length; i++){
+  for (var i = 0; i < hostList.length; i++) {
     document.getElementById('output')
-          .innerHTML+= '<label class="inline-flex items-center mt-3"> <input type="checkbox" id=hostname-' + i + ' class="form-checkbox h-4 w-4 text-gray-600"><span class="ml-2 text-gray-700">'+  hostList[i] + '</span> </label>';
+      .innerHTML += '<label class="inline-flex items-center mt-3"> <input type="checkbox" id=hostname-' + i + ' class="form-checkbox h-4 w-4 text-gray-600"><span class="ml-2 text-gray-700">' + hostList[i] + '</span> </label>';
   }
 }
 
-function addHost(host){
+function addHost(host) {
   return getStorageValue('list').then(toSet).then(hostSet => {
     hostSet.add(host);
     saveStorageValue('list', [...hostSet]).then(() => {
@@ -105,9 +121,9 @@ function addHost(host){
   });
 }
 
-function deleteHosts(hostlist){
+function deleteHosts(hostlist) {
   return getStorageValue('list').then(toSet).then(hostSet => {
-    for (const hostname of hostlist){
+    for (const hostname of hostlist) {
       hostSet.delete(hostname);
     }
     saveStorageValue('list', [...hostSet]).then(() => {
@@ -132,34 +148,61 @@ var getRequestsDatabaseAdapter;
 async function loadRequestInfo() {
   const databaseAdapter = await getRequestsDatabaseAdapter();
 
-  
+
   const domainList = document.getElementById("domainlist");
   const checkedDomains = [];
-  chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
-    var activeTab = tabs[0];  
+  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+    var activeTab = tabs[0];
     var activeTabId = activeTab.id; // or do whatever you need
     const url = new URL(activeTab.url);
-    let requests = await databaseAdapter.get({mainDomain: url.hostname});
-    console.error(requests);
+    popupMainDomain = url.hostname;
+    let requests = await databaseAdapter.get({ mainDomain: url.hostname });
+    console.log(requests);
     const mainDomainSCIONEnabled = requests.find(r => r.tabId === activeTabId && r.domain === url.hostname && r.scionEnabled);
     const mainDomain = document.getElementById("maindomain");
     const scionsupport = document.getElementById("scionsupport");
     const toggleRunning = document.getElementById("toggleRunning");
-    if(mainDomainSCIONEnabled) {
+    /*if (mainDomainSCIONEnabled) {
       mainDomain.innerHTML = "SCION enabled for " + url.hostname;
-      toggleRunning.checked = true;
+      toggleRunning.checked = true; // true
+      // toggleRunning.classList.add("halfchecked");
     } else {
       mainDomain.innerHTML = "SCION disabled for " + url.hostname;
       toggleRunning.checked = false;
-    }
+    }*/
+    if (perSiteStrictMode[url.hostname]) {
+      mainDomain.innerHTML = "Strict mode enabled for " + url.hostname;
+      toggleRunning.checked = true; // true
+    } else if (mainDomainSCIONEnabled) {
+      mainDomain.innerHTML = "Strict mode disabled for " + url.hostname;
+      toggleRunning.checked = false;
+    } // TODO: Else case would be no SCION...
     requests = requests.filter(r => r.tabId === activeTabId);
+    console.log(requests);
     let mixedContent = false;
-    requests.forEach(r => {
-      if(!checkedDomains.find(d => d === r.domain)) {
+    for (let i = requests.length - 1; i >= 0; i--) {
+      const r = requests[i];
+      if (!checkedDomains.find(d => d === r.domain)) {
         checkedDomains.push(r.domain);
         let p = document.createElement("p");
         p.style.fontSize = "14px"
-        if(r.scionEnabled) {
+        if (r.scionEnabled) {
+          p.innerHTML = "<span>&#x2705;</span> " + r.domain;
+        } else {
+          mixedContent = true;
+          p.innerHTML = "<span>&#x274C;</span> " + r.domain;
+        }
+
+        domainList.appendChild(p);
+      }
+    }
+    requests.forEach(r => {
+      if (!checkedDomains.find(d => d === r.domain)) {
+        checkedDomains.push(r.domain);
+        const sEnabled = requests.find(r2 => r.domain === r2.domain && r2.scionEnabled);
+        let p = document.createElement("p");
+        p.style.fontSize = "14px"
+        if (sEnabled) {
           p.innerHTML = "<span>&#x2705;</span> " + r.domain;
         } else {
           mixedContent = true;
@@ -169,17 +212,17 @@ async function loadRequestInfo() {
         domainList.appendChild(p);
       }
     });
-    if(mainDomainSCIONEnabled) {
-      if(mixedContent) {
+    if (mainDomainSCIONEnabled) {
+      if (mixedContent) {
         scionsupport.innerHTML = "Not all resources loaded via SCION";
       } else {
         scionsupport.innerHTML = "All resources loaded via SCION";
       }
     } else {
       scionsupport.innerHTML = "No resourced loaded via SCION";
-    } 
+    }
   });
-  
+
 }
 
 
@@ -189,10 +232,14 @@ async function loadRequestInfo() {
 // Let's later move to something that allows using imports and
 // maybe even typescript, e.g. https://github.com/abhijithvijayan/web-extension-starter
 (() => {
-    const src = chrome.extension.getURL('database.js');
-    import(src).then(req => {
-      getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
+  const src = chrome.extension.getURL('database.js');
+  import(src).then(req => {
+    getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
+    getStorageValue('perSiteStrictMode').then((val) => {
+      perSiteStrictMode = val || {};
       loadRequestInfo();
-    })
-    
+    });
+
+  })
+
 })();
