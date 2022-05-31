@@ -1,166 +1,300 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        input:checked ~ .dot {
-          transform: translateX(100%);
-          background-color: #48bb78;
-         }
-    </style>
-  </head>
-  <body>
-    <h3 class="text-xl font-bold mb-3 mt-3 w-100 text-center">Geofencing (ISD Selection)</h3>
-    <div class="flex justify-center mb-4 w-100">
-      <label
-         for="toogleA"
-         class="flex items-between cursor-pointer"
-         >
-         <div class="mr-3 text-gray-700 font-medium text-sm ">
-            Allow only local ISD traffic:
-         </div>
-         <!-- toggle -->
-         <div class="relative" id="checkboxRunning" onclick="">
-            <!-- input -->
-            <input id="toggleRunning" type="checkbox" class="sr-only" onchange=""/>
-            <!-- line -->
-            <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
-            <!-- dot -->
-            <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
-         </div>
-         <!-- label -->
-      </label>
-   </div>
-   <p></p>
-   <table class="table-auto w-full">
-    <thead class="text-xs font-semibold uppercase text-gray-400 bg-gray-50">
-        <tr>
-            <th class="p-2 whitespace-nowrap">
-                <div class="font-semibold text-left">ISD</div>
-            </th>
-            <th class="p-2 whitespace-nowrap">
-                <div class="font-semibold text-left">Region</div>
-            </th>
-            <th class="p-2 whitespace-nowrap">
-                <div class="font-semibold text-left">Allowed</div>
-            </th>
-        </tr>
-    </thead>
-    <tbody class="text-sm divide-y divide-gray-100">
-        <tr>
-            <td class="p-2 whitespace-nowrap">
-              <div class="text-left">19</div>
-          </td>
-            <td class="p-2 whitespace-nowrap">
-                <div class="text-left">EU</div>
-            </td>
-            <td class="p-2 whitespace-nowrap">
-                <div class="text-left font-medium">
-                   <!-- toggle -->
-                  <div class="relative";>
-                    <!-- input -->
-                    <input id="toggleISD-19" type="checkbox" class="isd-entry sr-only" onchange=""/>
-                    <!-- line -->
-                    <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
-                    <!-- dot -->
-                    <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
-                </div>
-                <!-- label -->
-                </div>
-            </td>
-        </tr>
-        <tr>
-          <td class="p-2 whitespace-nowrap">
-            <div class="text-left">17</div>
-        </td>
-          <td class="p-2 whitespace-nowrap">
-              <div class="text-left">Switzerland</div>
-          </td>
-          <td class="p-2 whitespace-nowrap">
-              <div class="text-left font-medium">
-                 <!-- toggle -->
-                <div class="relative" id="checkboxRunning">
-                  <!-- input -->
-                  <input id="toggleISD-17" type="checkbox" class="isd-entry sr-only" onchange=""/>
-                  <!-- line -->
-                  <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
-                  <!-- dot -->
-                  <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
-              </div>
-              <!-- label -->
-              </div>
-          </td>
-      </tr>
-      <tr>
-        <td class="p-2 whitespace-nowrap">
-          <div class="text-left">18</div>
-      </td>
-        <td class="p-2 whitespace-nowrap">
-            <div class="text-left">North America</div>
-        </td>
-        <td class="p-2 whitespace-nowrap">
-            <div class="text-left font-medium">
-               <!-- toggle -->
-              <div class="relative" id="checkboxRunning">
+
+<head>
+  <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    input:checked~.dot {
+      transform: translateX(120%);
+      /*background-color: #48bb78;*/
+    }
+  </style>
+  <style>
+    /* Tab content - closed */
+    .tab-content {
+      max-height: 0;
+      -webkit-transition: max-height .35s;
+      -o-transition: max-height .35s;
+      transition: max-height .35s;
+    }
+
+    /* :checked - resize to full height */
+    .tab input:checked~.tab-content {
+      max-height: 100vh;
+    }
+
+    .tab input+label {
+      font-size: 18px;
+      padding: 0.5rem;
+    }
+
+    /* Label formatting when open */
+    .tab input:checked+label {
+      /*@apply text-xl p-5 border-l-2 border-indigo-500 bg-gray-100 text-indigo*/
+      font-size: 18px;
+      /*.text-xl*/
+      padding: 0.5rem;
+      /*.p-5*/
+      border-left-width: 2px;
+      /*.border-l-2*/
+      border-color: #6574cd;
+      /*.border-indigo*/
+      /*.bg-gray-100 */
+      color: #6574cd;
+      /*.text-indigo*/
+    }
+
+    /* Icon */
+    .tab label::after {
+      float: right;
+      right: 0;
+      top: 0;
+      display: block;
+      width: 1.5em;
+      height: 1.5em;
+      line-height: 1.5;
+      font-size: 1.25rem;
+      text-align: center;
+      -webkit-transition: all .35s;
+      -o-transition: all .35s;
+      transition: all .35s;
+    }
+
+    /* Icon formatting - closed */
+    .tab input[type=checkbox]+label::after {
+      content: "+";
+      font-weight: bold;
+      /*.font-bold*/
+      border-width: 1px;
+      /*.border*/
+      border-radius: 9999px;
+      /*.rounded-full */
+      border-color: #b8c2cc;
+      /*.border-grey*/
+    }
+
+    .tab input[type=radio]+label::after {
+      content: "\25BE";
+      font-weight: bold;
+      /*.font-bold*/
+      border-width: 1px;
+      /*.border*/
+      border-radius: 9999px;
+      /*.rounded-full */
+      border-color: #b8c2cc;
+      /*.border-grey*/
+    }
+
+    /* Icon formatting - open */
+    .tab input[type=checkbox]:checked+label::after {
+      transform: rotate(315deg);
+      background-color: #6574cd;
+      /*.bg-indigo*/
+      color: #f8fafc;
+      /*.text-grey-lightest*/
+    }
+
+    .tab input[type=radio]:checked+label::after {
+      transform: rotateX(180deg);
+      background-color: #6574cd;
+      /*.bg-indigo*/
+      color: #f8fafc;
+      /*.text-grey-lightest*/
+    }
+  </style>
+</head>
+
+<body>
+  <div class="w-full mx-auto p-2" style="width: 500px; height: 600px">
+    <div class="">
+      <div class="tab w-full overflow-hidden border-t">
+        <input class="absolute opacity-0" id="tab-single-three" type="radio" name="tabs2" checked>
+        <label class="block leading-normal cursor-pointer" for="tab-single-three">General Settings</label>
+        <div class="tab-content overflow-hidden border-l-2 bg-gray-100 border-indigo-500 leading-normal">
+          <div class="flex p-2">
+            <div style="flex-grow: 1;">
+              <h4 class="text-lg font-bold mb-2">Global strict mode</h4>
+              <p style="font-size: 14px;">Use SCION exclusively. Many sites will fail or only load partially.</p>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+              <!-- toggle -->
+              <div class="relative" id="checkboxGlobalStrict" style="margin: auto; cursor: pointer;">
                 <!-- input -->
-                <input id="toggleISD-18" type="checkbox" class="isd-entry sr-only" onchange="" />
+                <input id="toggleGlobalStrict" type="checkbox" class="sr-only" />
                 <!-- line -->
-                <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                <div id="lineStrictMode" class="w-10 h-5 bg-gray-400 rounded-full shadow-inner"></div>
                 <!-- dot -->
-                <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+                <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-0 transition"></div>
+              </div>
             </div>
-            <!-- label -->
+          </div>
+        </div>
+        <div class="tab w-full overflow-hidden border-t">
+          <input class="absolute opacity-0" id="tab-single-one" type="radio" name="tabs2">
+          <label class="block leading-normal cursor-pointer" for="tab-single-one">Site Preferences</label>
+          <div class="tab-content overflow-hidden border-l-2 bg-gray-100 border-indigo-500 leading-normal">
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tab w-full overflow-hidden border-t">
+      <input class="absolute opacity-0" id="tab-single-two" type="radio" name="tabs2">
+      <label class="block leading-normal cursor-pointer" for="tab-single-two">Geofencing (ISD Selection)</label>
+      <div class="tab-content overflow-hidden border-l-2 border-indigo-500 leading-normal">
+        <div class="flex justify-center mb-4 w-100">
+          <label for="toogleA" class="flex items-between cursor-pointer">
+            <div class="mr-3 text-gray-700 font-medium text-sm ">
+              Allow only local ISD traffic:
             </div>
-        </td>
-    </tr>
-    <tr>
-      <td class="p-2 whitespace-nowrap">
-        <div class="text-left">16</div>
-    </td>
-      <td class="p-2 whitespace-nowrap">
-          <div class="text-left">AWS</div>
-      </td>
-      <td class="p-2 whitespace-nowrap">
-          <div class="text-left font-medium">
-             <!-- toggle -->
-            <div class="relative" id="checkboxRunning">
+            <!-- toggle -->
+            <div class="relative" id="checkboxRunning" onclick="">
               <!-- input -->
-              <input id="toggleISD-16" type="checkbox" class="isd-entry sr-only" onchange=""/>
+              <input id="toggleRunning" type="checkbox" class="sr-only" onchange="" />
               <!-- line -->
               <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
               <!-- dot -->
               <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
-          </div>
-          <!-- label -->
-          </div>
-      </td>
-  </tr>
-  <tr>
-    <td class="p-2 whitespace-nowrap">
-      <div class="text-left">20</div>
-  </td>
-    <td class="p-2 whitespace-nowrap">
-        <div class="text-left">Korea</div>
-    </td>
-    <td class="p-2 whitespace-nowrap">
-        <div class="text-left font-medium">
-           <!-- toggle -->
-          <div class="relative" id="checkboxRunning">
-            <!-- input -->
-            <input id="toggleISD-20" type="checkbox" class="isd-entry sr-only" onchange=""/>
-            <!-- line -->
-            <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
-            <!-- dot -->
-            <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+            </div>
+            <!-- label -->
+          </label>
         </div>
-        <!-- label -->
-        </div>
-    </td>
-</tr>
+        <p></p>
+        <table class="table-auto w-full">
+          <thead class="text-xs font-semibold uppercase text-gray-400 bg-gray-50">
+            <tr>
+              <th class="p-2 whitespace-nowrap">
+                <div class="font-semibold text-left">ISD</div>
+              </th>
+              <th class="p-2 whitespace-nowrap">
+                <div class="font-semibold text-left">Region</div>
+              </th>
+              <th class="p-2 whitespace-nowrap">
+                <div class="font-semibold text-left">Allowed</div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="text-sm divide-y divide-gray-100">
+            <tr>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">19</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">EU</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left font-medium">
+                  <!-- toggle -->
+                  <div class="relative" ;>
+                    <!-- input -->
+                    <input id="toggleISD-19" type="checkbox" class="isd-entry sr-only" onchange="" />
+                    <!-- line -->
+                    <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                    <!-- dot -->
+                    <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+                  </div>
+                  <!-- label -->
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">17</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">Switzerland</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left font-medium">
+                  <!-- toggle -->
+                  <div class="relative" id="checkboxRunning">
+                    <!-- input -->
+                    <input id="toggleISD-17" type="checkbox" class="isd-entry sr-only" onchange="" />
+                    <!-- line -->
+                    <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                    <!-- dot -->
+                    <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+                  </div>
+                  <!-- label -->
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">18</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">North America</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left font-medium">
+                  <!-- toggle -->
+                  <div class="relative" id="checkboxRunning">
+                    <!-- input -->
+                    <input id="toggleISD-18" type="checkbox" class="isd-entry sr-only" onchange="" />
+                    <!-- line -->
+                    <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                    <!-- dot -->
+                    <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+                  </div>
+                  <!-- label -->
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">16</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">AWS</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left font-medium">
+                  <!-- toggle -->
+                  <div class="relative" id="checkboxRunning">
+                    <!-- input -->
+                    <input id="toggleISD-16" type="checkbox" class="isd-entry sr-only" onchange="" />
+                    <!-- line -->
+                    <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                    <!-- dot -->
+                    <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+                  </div>
+                  <!-- label -->
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">20</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left">Korea</div>
+              </td>
+              <td class="p-2 whitespace-nowrap">
+                <div class="text-left font-medium">
+                  <!-- toggle -->
+                  <div class="relative" id="checkboxRunning">
+                    <!-- input -->
+                    <input id="toggleISD-20" type="checkbox" class="isd-entry sr-only" onchange="" />
+                    <!-- line -->
+                    <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
+                    <!-- dot -->
+                    <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+                  </div>
+                  <!-- label -->
+                </div>
+              </td>
+            </tr>
 
-    </tbody>
-</table>
-  </body>
-  <script src="options.js"></script>
-  <script src="shared/storage.js"></script>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  </div>
+
+</body>
+<script src="shared/storage.js"></script>
+<script src="options.js"></script>
+
 </html>

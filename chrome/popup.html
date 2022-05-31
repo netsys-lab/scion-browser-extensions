@@ -15,9 +15,14 @@
          background: linear-gradient(90deg, rgba(248, 247, 250, 1) 0%, rgba(230, 230, 238, 1) 35%, rgba(228, 240, 242, 1) 100%);
       }
 
-      input:checked~.dot {
-         transform: translateX(100%);
-         background-color: #48bb78;
+      input.halfchecked~.dot {
+         transform: translateX(125%) !important;
+         /*background-color: #bb8048;*/
+      }
+
+      input~.dot {
+         transform: translateX(230%);
+         /*background-color: #48bb78;*/
       }
    </style>
 </head>
@@ -28,22 +33,31 @@
 
    </div>
    <hr />
-   <div class="flex justify-center mb-4">
+   <div class="flex justify-center mb-2">
       <label for="toogleA" class="flex items-center cursor-pointer">
          <div id="maindomain" class="mr-3 text-gray-700 font-medium text-sm ">
 
          </div>
-         <!-- toggle -->
-         <div class="relative" id="checkboxRunning">
-            <!-- input -->
-            <input id="toggleRunning" type="checkbox" class="sr-only" onchange="toggleExtensionRunning();" />
-            <!-- line -->
-            <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
-            <!-- dot -->
-            <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
+         <div class="flex flex-col" style="width: 95px;" class="items-center">
+            <!-- toggle -->
+            <div class="relative" id="checkboxRunning" style="margin: auto;">
+               <!-- input -->
+               <input id="toggleRunning" type="checkbox" class="sr-only" onchange="toggleExtensionRunning();" />
+               <!-- line -->
+               <div id="lineRunning" class="w-12 h-4 bg-gray-400 rounded-full shadow-inner"></div>
+               <!-- dot -->
+               <div class="dot absolute w-4 h-4 bg-white rounded-full shadow -left-1 -top-0 transition"></div>
+            </div>
+            <span id="scionmode" style="font-size: 11px; text-align: center;"></span>
          </div>
          <!-- label -->
       </label>
+   </div>
+   <hr />
+   <div class="flex">
+      <button
+         class="px-2 py-1 rounded-md text-sm font-medium border-0 focus:outline-none focus:ring transition text-blue-600 hover:text-blue-800 active:bg-blue-200 focus:ring-blue-300"
+         id="button-options">Manage Preferences...</button>
    </div>
    <div class="d-none hidden flex justify-center mb-4"><span class="text-sm mr-1 text-gray-700 font-medium">SCION
          forwarding:</span> <span id="headline"

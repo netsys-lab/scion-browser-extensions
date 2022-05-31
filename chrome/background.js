@@ -80,8 +80,10 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
   else if (namespace == 'sync' && changes.isd_whitelist?.newValue) {
     geofence(changes.isd_whitelist.newValue);
-  } else if (namespace == 'sync' && changes.perSiteStrictMode?.newValue) {
+  } else if (namespace == 'sync' && changes.perSiteStrictMode?.newValue !== undefined) {
     perSiteStrictMode = changes.perSiteStrictMode?.newValue;
+  } else if (namespace == 'sync' && changes.globalStrictMode?.newValue !== undefined) {
+    globalStrictMode = changes.globalStrictMode?.newValue;
   }
 
 
@@ -159,9 +161,6 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 /* Request intercepting */
 chrome.webRequest.onBeforeRequest.addListener(
   onBeforeRequest, { urls: ["<all_urls>"] }, ['blocking']);
-
-chrome.webRequest.onBeforeRedirect.addListener(
-  onBeforeRedirect, { urls: ["<all_urls>"] });
 
 chrome.webRequest.onBeforeRedirect.addListener(
   onBeforeRedirect, { urls: ["<all_urls>"] });

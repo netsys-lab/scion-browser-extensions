@@ -2,9 +2,13 @@
 'use strict';
 
 
-let headline = document.getElementById('headline');
-let toggleRunning = document.getElementById('toggleRunning');
-let checkboxRunning = document.getElementById('checkboxRunning');
+const headline = document.getElementById('headline');
+const toggleRunning = document.getElementById('toggleRunning');
+const checkboxRunning = document.getElementById('checkboxRunning');
+const lineRunning = document.getElementById("lineRunning");
+const scionmode = document.getElementById("scionmode");
+const mainDomain = document.getElementById("maindomain");
+
 var perSiteStrictMode = {};
 var popupMainDomain;
 
@@ -51,20 +55,24 @@ window.onload = function () {
 function toggleExtensionRunning() {
 
   toggleRunning.checked = !toggleRunning.checked;
-  const mainDomain = document.getElementById("maindomain");
   const newPerSiteStrictMode = {
     ...perSiteStrictMode,
     [popupMainDomain]: toggleRunning.checked,
   };
 
   if (toggleRunning.checked) {
-    mainDomain.innerHTML = "Strict mode enabled for " + popupMainDomain;
+    mainDomain.innerHTML = "SCION preference for " + popupMainDomain;
+    toggleRunning.classList.remove("halfchecked");
+    lineRunning.style.backgroundColor = "#48bb78";
+    scionmode.innerHTML = "Strict";
   } else {
-    mainDomain.innerHTML = "Strict mode disabled for " + popupMainDomain;
+    mainDomain.innerHTML = "SCION preference for " + popupMainDomain;
+    toggleRunning.classList.add("halfchecked");
+    lineRunning.style.backgroundColor = "#cccccc";
+    scionmode.innerHTML = "When available";
   }
 
   saveStorageValue('perSiteStrictMode', newPerSiteStrictMode).then(() => {
-    debugger;
     perSiteStrictMode = newPerSiteStrictMode;
   });
 
@@ -159,9 +167,9 @@ async function loadRequestInfo() {
     let requests = await databaseAdapter.get({ mainDomain: url.hostname });
     console.log(requests);
     const mainDomainSCIONEnabled = requests.find(r => r.tabId === activeTabId && r.domain === url.hostname && r.scionEnabled);
-    const mainDomain = document.getElementById("maindomain");
     const scionsupport = document.getElementById("scionsupport");
-    const toggleRunning = document.getElementById("toggleRunning");
+
+
     /*if (mainDomainSCIONEnabled) {
       mainDomain.innerHTML = "SCION enabled for " + url.hostname;
       toggleRunning.checked = true; // true
@@ -171,12 +179,18 @@ async function loadRequestInfo() {
       toggleRunning.checked = false;
     }*/
     if (perSiteStrictMode[url.hostname]) {
-      mainDomain.innerHTML = "Strict mode enabled for " + url.hostname;
+      mainDomain.innerHTML = "SCION preference for " + url.hostname;
       toggleRunning.checked = true; // true
+      toggleRunning.classList.remove("halfchecked");
+      lineRunning.style.backgroundColor = "#48bb78";
+      scionmode.innerHTML = "Strict";
     } else if (mainDomainSCIONEnabled) {
-      mainDomain.innerHTML = "Strict mode disabled for " + url.hostname;
-      toggleRunning.checked = false;
-    } // TODO: Else case would be no SCION...
+      mainDomain.innerHTML = "SCION preference for " + url.hostname;
+      toggleRunning.checked = false; // true
+      toggleRunning.classList.add("halfchecked");
+      lineRunning.style.backgroundColor = "#cccccc";
+      scionmode.innerHTML = "When available";
+    } // TODO: Else case would be no SCION... toggleRunning.checked = false;
     requests = requests.filter(r => r.tabId === activeTabId);
     console.log(requests);
     let mixedContent = false;
@@ -243,3 +257,8 @@ async function loadRequestInfo() {
   })
 
 })();
+
+document.getElementById('button-options')
+  .addEventListener('click', function () {
+    chrome.tabs.create({ 'url': 'chrome://extensions/?options=' + chrome.runtime.id });
+  });
