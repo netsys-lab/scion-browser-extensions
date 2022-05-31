@@ -8,6 +8,12 @@ const toggleGlobalStrict = document.getElementById('toggleGlobalStrict');
 const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict');
 const lineStrictMode = document.getElementById('lineStrictMode');
 const tableSitePreferences = document.getElementById('tableBodySitePreferences');
+const checkBoxNewDomainStrictMode = document.getElementById('checkBoxNewDomainStrictMode');
+const toggleNewDomainStrictMode = document.getElementById('toggleNewDomainStrictMode');
+const lineNewDomainStrictMode = document.getElementById('lineNewDomainStrictMode');
+const inputNewDomain = document.getElementById('inputNewDomain');
+const scionMode = document.getElementById('scionmode');
+
 
 const tableSitePreferencesRow = ` 
 <tr>
@@ -17,7 +23,7 @@ const tableSitePreferencesRow = `
 <td class="p-2 whitespace-nowrap flex">
   <div class="text-left font-medium mr-3">
     <div class="relative cursor-pointer" id="checkBoxSite-{site}">
-      <input id="toggleSite-{site}" {checked} type="checkbox" class="site-pref-entry sr-only" onchange="" />
+      <input id="toggleSite-{site}" {checked} type="checkbox" class="site-pref-entry sr-only" />
       <div class="w-8 h-4 bg-gray-400 rounded-full shadow-inner" style="background-color: {backgroundColor};"></div>
       <div class="dot2 absolute w-4 h-4 bg-white rounded-full shadow -left-1 -top-0 transition"></div>
     </div>
@@ -124,20 +130,82 @@ getStorageValue('globalStrictMode').then(val => {
     }
 });
 
-getStorageValue('perSiteStrictMode').then(perSiteStrictMode => {
-    tableSitePreferences.innerHTML = '';
-    Object.keys(perSiteStrictMode || {}).forEach(k => {
-        let row = tableSitePreferencesRow.replace("{site}", k);
-        row = row.replace("{checked}", perSiteStrictMode[k] ? "checked=true" : "");
-        row = row.replace("{mode}", perSiteStrictMode[k] ? 'strict' : 'when available');
-        row = row.replace("{backgroundColor}", perSiteStrictMode[k] ? '#48bb78' : '');
-        tableSitePreferences.innerHTML += row;
+function updateSitePreferences() {
+    getStorageValue('perSiteStrictMode').then(perSiteStrictMode => {
+        tableSitePreferences.innerHTML = '';
+        debugger;
+        Object.keys(perSiteStrictMode || {}).forEach(k => {
+            let row = tableSitePreferencesRow.replaceAll("{site}", k);
+            row = row.replaceAll("{checked}", perSiteStrictMode[k] ? "checked=true" : "");
+            row = row.replaceAll("{mode}", perSiteStrictMode[k] ? 'strict' : 'when available');
+            row = row.replaceAll("{backgroundColor}", perSiteStrictMode[k] ? '#48bb78' : '');
+            tableSitePreferences.innerHTML += row;
+        });
+        registerToggleSitePreferenceHandler();
     });
-    console.warn(perSiteStrictMode);
-});
+}
+
+updateSitePreferences();
+
+function registerToggleSitePreferenceHandler() {
+    const toggles = document.getElementsByClassName("site-pref-entry");
+    for (let i = 0; i < toggles.length; i++) {
+        const parentDiv = toggles[i].parentElement;
+        parentDiv.onclick = () => {
+            toggleSitePreference(toggles[i].id);
+        }
+    }
+};
+
+
+function toggleSitePreference(checked_id) {
+    const isdToggle = document.getElementById(checked_id);
+    isdToggle.checked = !isdToggle.checked;
+    const domain = checked_id.split("toggleSite-")[1];
+    getStorageValue('perSiteStrictMode').then(val => {
+        val[domain] = isdToggle.checked;
+        saveStorageValue('perSiteStrictMode', val).then(() => {
+            updateSitePreferences();
+        });
+    });
+}
+
 
 
 document.getElementById('checkboxGlobalStrict')
     .addEventListener('click', function () {
         toggleGlobalStrictMode();
+    });
+
+
+buttonAddHostname
+    .addEventListener('click', function () {
+        const domain = document.getElementById('inputNewDomain').value;
+        const strictMode = !!toggleNewDomainStrictMode.checked;
+        getStorageValue('perSiteStrictMode').then(val => {
+            let perSiteStrictMode = {};
+            if (val) {
+                perSiteStrictMode = val;
+            }
+            perSiteStrictMode[domain] = strictMode;
+            saveStorageValue('perSiteStrictMode', perSiteStrictMode).then(() => {
+                updateSitePreferences();
+                toggleNewDomainStrictMode.checked = false;
+                inputNewDomain.value = '';
+                lineNewDomainStrictMode.style.backgroundColor = '';
+                scionMode.innerHTML = 'when available';
+            });
+        });
+    });
+
+checkBoxNewDomainStrictMode
+    .addEventListener('click', function () {
+        toggleNewDomainStrictMode.checked = !toggleNewDomainStrictMode.checked;
+        if (toggleNewDomainStrictMode.checked) {
+            lineNewDomainStrictMode.style.backgroundColor = '#48bb78';
+            scionMode.innerHTML = 'strict';
+        } else {
+            lineNewDomainStrictMode.style.backgroundColor = '';
+            scionMode.innerHTML = 'when available';
+        }
     });

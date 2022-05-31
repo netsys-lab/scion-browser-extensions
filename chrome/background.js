@@ -232,8 +232,7 @@ function onBeforeRequest(requestInfo) {
     } else if (knownSCION[url.hostname]) {
       return {};
     } else {
-      // TODO: Find out why we have to replace this localhost part...
-      return { redirectUrl: "http://localhost:8888/r?url=" + requestInfo.url.replace("http://localhost:8888/r?url=", "") };
+      return { redirectUrl: "http://localhost:8888/r?url=" + requestInfo.url };
     }
   }
 
