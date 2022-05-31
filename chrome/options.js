@@ -7,6 +7,24 @@
 const toggleGlobalStrict = document.getElementById('toggleGlobalStrict');
 const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict');
 const lineStrictMode = document.getElementById('lineStrictMode');
+const tableSitePreferences = document.getElementById('tableBodySitePreferences');
+
+const tableSitePreferencesRow = ` 
+<tr>
+<td class="p-2 whitespace-nowrap">
+  <div class="text-left">{site}</div>
+</td>
+<td class="p-2 whitespace-nowrap flex">
+  <div class="text-left font-medium mr-3">
+    <div class="relative cursor-pointer" id="checkBoxSite-{site}">
+      <input id="toggleSite-{site}" {checked} type="checkbox" class="site-pref-entry sr-only" onchange="" />
+      <div class="w-8 h-4 bg-gray-400 rounded-full shadow-inner" style="background-color: {backgroundColor};"></div>
+      <div class="dot2 absolute w-4 h-4 bg-white rounded-full shadow -left-1 -top-0 transition"></div>
+    </div>
+  </div>
+  <span style="font-size: 12px">{mode}</span>
+</td>
+</tr>`
 
 const placeholderToggleID = "toggleISD-";
 
@@ -104,6 +122,18 @@ getStorageValue('globalStrictMode').then(val => {
     } else {
         lineStrictMode.style.backgroundColor = '#cccccc';
     }
+});
+
+getStorageValue('perSiteStrictMode').then(perSiteStrictMode => {
+    tableSitePreferences.innerHTML = '';
+    Object.keys(perSiteStrictMode || {}).forEach(k => {
+        let row = tableSitePreferencesRow.replace("{site}", k);
+        row = row.replace("{checked}", perSiteStrictMode[k] ? "checked=true" : "");
+        row = row.replace("{mode}", perSiteStrictMode[k] ? 'strict' : 'when available');
+        row = row.replace("{backgroundColor}", perSiteStrictMode[k] ? '#48bb78' : '');
+        tableSitePreferences.innerHTML += row;
+    });
+    console.warn(perSiteStrictMode);
 });
 
 
