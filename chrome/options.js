@@ -133,7 +133,6 @@ getStorageValue('globalStrictMode').then(val => {
 function updateSitePreferences() {
     getStorageValue('perSiteStrictMode').then(perSiteStrictMode => {
         tableSitePreferences.innerHTML = '';
-        debugger;
         Object.keys(perSiteStrictMode || {}).forEach(k => {
             let row = tableSitePreferencesRow.replaceAll("{site}", k);
             row = row.replaceAll("{checked}", perSiteStrictMode[k] ? "checked=true" : "");
