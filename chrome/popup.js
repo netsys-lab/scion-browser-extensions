@@ -178,6 +178,7 @@ async function loadRequestInfo() {
       mainDomain.innerHTML = "SCION disabled for " + url.hostname;
       toggleRunning.checked = false;
     }*/
+
     if (perSiteStrictMode[url.hostname]) {
       mainDomain.innerHTML = "SCION preference for " + url.hostname;
       toggleRunning.checked = true; // true
@@ -190,7 +191,10 @@ async function loadRequestInfo() {
       toggleRunning.classList.add("halfchecked");
       lineRunning.style.backgroundColor = "#cccccc";
       scionmode.innerHTML = "When available";
-    } // TODO: Else case would be no SCION... toggleRunning.checked = false;
+    } else {
+      const scionModePreference = document.getElementById('scionModePreference');
+      scionModePreference.style.display = "none";
+    }// TODO: Else case would be no SCION... toggleRunning.checked = false;
     requests = requests.filter(r => r.tabId === activeTabId);
     console.log(requests);
     let mixedContent = false;
