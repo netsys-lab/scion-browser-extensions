@@ -9,25 +9,10 @@ const lineRunning = document.getElementById("lineRunning");
 const scionmode = document.getElementById("scionmode");
 const mainDomain = document.getElementById("maindomain");
 
-var perSiteStrictMode = {};
+var perSiteStrictMode = {}; sad
 var popupMainDomain;
 
 window.onload = function () {
-
-  // Update host list in popup
-  // getStorageValue('list').then((hostSet) => {
-  //   if(!hostSet) {
-  //     hostSet = [
-  //       "www.scionlab.org",
-  //       "www.scionlab.chat",
-  //       "www.scion-pathguess.game"
-  //     ];
-  //     saveStorageValue('list', [...hostSet]).then(() => {
-  //       console.log('Initialized hosts');
-  //     })
-  //   }
-  //   displayHostList(hostSet);
-  // });
 
   // Update Forwarding badge depending on storage settings
   getStorageValue('forwarding_enabled').then(isForwardingEnabled => {
@@ -43,7 +28,6 @@ window.onload = function () {
   // Load extension running value and remove other settings in case its not running
   getStorageValue('extension_running').then((val) => {
     toggleRunning.checked = false;// val;
-    //  document.getElementById('domains-container').hidden = !toggleRunning.checked;
     if (!val) {
       headline.innerText = "Inactive"
       headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
@@ -79,35 +63,7 @@ function toggleExtensionRunning() {
 }
 checkboxRunning.onclick = toggleExtensionRunning;
 
-/*
 
-document.getElementById('button-write-hostname')
-            .addEventListener('click', function() {
-              let hostname = document.getElementById("input-hostname").value
-              document.getElementById("input-hostname").value = ""
-              addHost(hostname).then(hostSet=>{
-                displayHostList([...hostSet]);
-                return hostSet;
-              })
-            });
-
-
-document.getElementById('button-delete-hostname')
-            .addEventListener('click', function() {
-              let hostCheckBoxes = document.getElementById("output").children
-              let hostList = new Array()
-              for (var i = 0; i < hostCheckBoxes.length; i++){
-                if (hostCheckBoxes[i].getElementsByTagName("input")[0].checked){
-                  let hostname = hostCheckBoxes[i].outerText;
-                  hostList.push(hostname);
-                }
-              }
-              deleteHosts(hostList).then(hostSet=>{
-                displayHostList([...hostSet]);
-                return hostSet;
-              })
-            });
-*/
 function displayHostList(hostList) {
   if (!hostList) {
     return;
@@ -145,13 +101,6 @@ function openOptions() {
 
 }
 
-/*
-document.getElementById('button-options')
-            .addEventListener('click', function() {
-              chrome.tabs.create({ 'url': 'chrome://extensions/?options=' + chrome.runtime.id });
-          });
-*/
-
 var getRequestsDatabaseAdapter;
 async function loadRequestInfo() {
   const databaseAdapter = await getRequestsDatabaseAdapter();
@@ -165,19 +114,8 @@ async function loadRequestInfo() {
     const url = new URL(activeTab.url);
     popupMainDomain = url.hostname;
     let requests = await databaseAdapter.get({ mainDomain: url.hostname });
-    console.log(requests);
     const mainDomainSCIONEnabled = requests.find(r => r.tabId === activeTabId && r.domain === url.hostname && r.scionEnabled);
     const scionsupport = document.getElementById("scionsupport");
-
-
-    /*if (mainDomainSCIONEnabled) {
-      mainDomain.innerHTML = "SCION enabled for " + url.hostname;
-      toggleRunning.checked = true; // true
-      // toggleRunning.classList.add("halfchecked");
-    } else {
-      mainDomain.innerHTML = "SCION disabled for " + url.hostname;
-      toggleRunning.checked = false;
-    }*/
 
     if (perSiteStrictMode[url.hostname]) {
       mainDomain.innerHTML = "SCION preference for " + url.hostname;

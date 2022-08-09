@@ -3,32 +3,34 @@ const database = {
     requests: [],
 }
 
-// This is crap. The popup and the browser extension have different local/session storages
-// ...
+// This is not optimal. The popup and the browser extension have different local/session storages
+// So we need to use this sync storage which is limited to 8K and which is slow... 
+// Until now I don't have a nice idea on how to solve this.
+// phew...
 
-if(window.database === undefined) {
+if (window.database === undefined) {
     window.database = database;
 }
 
 function saveStorageValue(key, value) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.sync.set({[key]: value}, function() {
-        resolve();
-      });
+    return new Promise((resolve) => {
+        chrome.storage.sync.set({ [key]: value }, function () {
+            resolve();
+        });
     });
-  }
+}
 
-  function getStorageValue(key) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.sync.get([key], function(result) {
-        resolve(result[key]);
-      });
+function getStorageValue(key) {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get([key], function (result) {
+            resolve(result[key]);
+        });
     });
-  }
+}
 
 const load = async () => {
     const str = await getStorageValue("requests");
-    if(str && str != "") {
+    if (str && str != "") {
 
         window.database = JSON.parse(str);
     }
@@ -46,19 +48,19 @@ class DatabaseAdapter {
     }
 
     get = (filter) => {
-        
+
         return new Promise(resolve => {
             load().then(() => {
                 let filteredRequests = window.database[this.table];
                 Object.keys(filter).forEach((key) => {
                     filteredRequests = filteredRequests.filter(r => r[key] === filter[key]);
                 });
-                
+
                 resolve(filteredRequests);
             })
-          
+
         });
-        
+
     }
 
 
@@ -69,11 +71,11 @@ class DatabaseAdapter {
             Object.keys(filter).forEach((key) => {
                 filteredRequests = filteredRequests.filter(r => r[key] === filter[key]);
             });
-            if(filteredRequests.length > 0) {
-                return filteredRequests[0];
+            if (filteredRequests.length > 0) {
+                resolve(filteredRequests[0]);
             }
 
-            return null;
+            resolve(null);
         });
     }
 
@@ -82,17 +84,17 @@ class DatabaseAdapter {
             load().then(() => {
                 // We need to keep the list small for now, since 
                 // This storage thing can only handle 8KB...
-                while(window.database[this.table].length > 50) {
+                while (window.database[this.table].length > 50) {
                     window.database[this.table].shift();
                 }
-                
+
                 window.database[this.table].push(entry);
                 save().then(() => {
                     resolve(entry);
                 });
 
-            })        
-            
+            })
+
         })
     }
 
@@ -115,67 +117,3 @@ export const getRequestsDatabaseAdapter = () => {
         resolve(new DatabaseAdapter("requests"));
     });
 }
-
-// TODO: For later, if we want to persist things, but for now
-// Its too time consuming to tackle this...
-/*
-class DatabaseAdapter {
-
-    constructor(table, objectStore) {
-        this.table = table;
-        this.objectStore = objectStore;
-    }
-
-    open() {
-
-    }
-
-    close() {
-
-    }
-
-    get(filers) {
-
-    }
-
-    find(filers) {
-
-    }
-
-    add(entry) {
-        return new Promise((resolve, reject) => {
-            var request = this.objectStore.add(entry);
-            request.onsuccess = function(event) {
-                resolve(entry);
-            };
-
-            request.onerror = function(event) {
-                reject(event.target.errorCode);
-              };
-        }); 
-    }
-
-    update(id, newEntry) {
-
-    }
-}
-
-const getRequestsDatabaseAdapter = () => {
-    return new Promise((resolve, reject) => {
-        const request = window.indexedDB.open(dbName, 3);
-        request.onerror = function(event) {
-            // Machen Sie etwas mit request.errorCode!
-            reject(request.errorCode);
-        };
-        request.onsuccess = function(event) {
-            const db = event.target.result;
-            var objectStore = db.createObjectStore("requests", { keyPath: "requestId" });
-            objectStore.createIndex("tabId", "tabId", { unique: false });
-            const dbAdapter = new DatabaseAdapter("requests", objectStore);
-            resolve(dbAdapter);
-        };
-    })
-    
-}*/
-
-// console.warn(getRequestsDatabaseAdapter);

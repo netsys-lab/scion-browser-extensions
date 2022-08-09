@@ -33,13 +33,12 @@ var getRequestsDatabaseAdapter;
 })();
 
 getStorageValue('perSiteStrictMode').then((val) => {
-  perSiteStrictMode = val;
+  perSiteStrictMode = val || {}; // Here we may get undefined which is bad
 });
 
 getStorageValue('globalStrictMode').then((val) => {
-  globalStrictMode = val;
+  globalStrictMode = !!val;
 });
-
 
 /* PAC configuration */
 var config = {
@@ -196,7 +195,10 @@ function onBeforeRequest(requestInfo) {
 
   // If we don't have any information about scion-enabled or not
   if (!knownNonSCION[url.hostname] && !knownSCION[url.hostname]) {
-    // TODO: We could do this also in the onErrorOccured/onBeforeRedirect...
+    // We can't do this in the onBeforeRedirect/onErrorOccured
+    // Because these things are only done in strict mode
+    // So we would loose all information for domains that are not in 
+    // (global) strict mode
     fetch("http://localhost:8888/resolve?host=" + url.hostname, {
       method: "GET"
     }).then(response => {
@@ -261,67 +263,3 @@ function onErrorOccurred(details) {
     knownNonSCION[targetUrl.hostname] = true;
   }
 }
-
-
-/* Deprecated stuff */
-/*
-function addHost(host) {
-  return getStorageValue('list').then(toSet).then(hostSet => {
-    hostSet.add(host);
-    saveStorageValue('list', [...hostSet]).then(() => {
-      console.log('Added host: ' + host);
-    })
-    return hostSet;
-  });
-}
-
-function writeSCIONPreferences(e) {
-  console.log("onBeforeHeaders");
-  console.log(e);
-  console.log(e.method, e.requestHeaders)
-  if (e.method === "CONNECT") {
-    e.requestHeaders.push({
-      name: "scion-forwarding",
-      value: "true"
-    })
-  }
-}
- var PACpreamble = " const scionHosts = new Set([\n"
- var PACtemplate =
-   " ])\n" +
-   "function FindProxyForURL(url, host) {\n" +
-   "if(scionHosts.has(host)) {\n" +
-   "    return 'PROXY localhost:8888';\n" +
-   "}\n" +
-   "return 'DIRECT';\n" +
-   "}"
- 
-checkPACconfig();
-
-function updatePACScript(hostList) {
-
-  // Transform list to string
-  let stringList = ""
-  for (const hostname of hostList) {
-    stringList += "'" + hostname + "',\n";
-  }
-
-  //PACpreamble + hosts concatenated with, + PACtemplate
-  var config = {
-    mode: "pac_script",
-    pacScript: {
-      data: PACpreamble + stringList + PACtemplate,
-    }
-  };
-  chrome.proxy.settings.set(
-    { value: config, scope: 'regular' },
-    function () { });
-}
-// Double check if the script is set correctly
-function checkPACconfig() {
-  chrome.proxy.settings.get(
-    { 'incognito': false },
-    function (config) { console.log(JSON.stringify(config)); });
-}
-
-*/

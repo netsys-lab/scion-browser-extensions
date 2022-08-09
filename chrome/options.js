@@ -116,9 +116,7 @@ function toggleGlobalStrictMode() {
     } else {
         lineStrictMode.style.backgroundColor = '#cccccc';
     }
-    saveStorageValue('globalStrictMode', toggleGlobalStrict.checked).then((val) => {
-
-    });
+    saveStorageValue('globalStrictMode', toggleGlobalStrict.checked);
 }
 
 getStorageValue('globalStrictMode').then(val => {
