@@ -168,7 +168,6 @@ chrome.webRequest.onErrorOccurred.addListener(
   onErrorOccurred, { urls: ["<all_urls>"] });
 
 function onBeforeRequest(requestInfo) {
-  console.log("request" + JSON.stringify(requestInfo));
 
   const url = new URL(requestInfo.url);
 
@@ -185,6 +184,8 @@ function onBeforeRequest(requestInfo) {
     return {};
   }
 
+  console.log("request" + JSON.stringify(requestInfo.url));
+
   const requestDBEntry = {
     requestId: requestInfo.requestId,
     tabId: requestInfo.tabId,
@@ -192,34 +193,39 @@ function onBeforeRequest(requestInfo) {
     mainDomain: requestInfo.initiator ? new URL(requestInfo.initiator).hostname : '',
   };
 
+  getRequestsDatabaseAdapter().then(databaseAdapter => {
+    // If we don't have any information about scion-enabled or not
+    if (!knownNonSCION[url.hostname] && !knownSCION[url.hostname]) {
+      // We can't do this in the onBeforeRedirect/onErrorOccured
+      // Because these things are only done in strict mode
+      // So we would loose all information for domains that are not in 
+      // (global) strict mode
+      fetch("http://localhost:8888/resolve?host=" + url.hostname, {
+        method: "GET"
+      }).then(response => {
 
-  // If we don't have any information about scion-enabled or not
-  if (!knownNonSCION[url.hostname] && !knownSCION[url.hostname]) {
-    // We can't do this in the onBeforeRedirect/onErrorOccured
-    // Because these things are only done in strict mode
-    // So we would loose all information for domains that are not in 
-    // (global) strict mode
-    fetch("http://localhost:8888/resolve?host=" + url.hostname, {
-      method: "GET"
-    }).then(response => {
-      getRequestsDatabaseAdapter().then(databaseAdapter => {
         if (response.status === 200) {
           response.text().then(res => {
             if (res != "") {
               requestDBEntry.scionEnabled = true;
             }
+            databaseAdapter.add(requestDBEntry, {
+              mainDomain: requestDBEntry.mainDomain,
+              scionEnabled: requestDBEntry.scionEnabled,
+              domain: requestDBEntry.domain,
+            });
           });
         }
-        databaseAdapter.add(requestDBEntry);
-
+      }).catch((e) => {
+        console.warn("Resolution failed");
+        console.error(e);
       });
-    }).catch((e) => {
-      console.warn("Resolution failed");
-      console.error(e);
-    });
-  } else {
-    requestDBEntry.scionEnabled = !!knownSCION[url.hostname];
-  }
+    } else {
+      requestDBEntry.scionEnabled = !!knownSCION[url.hostname];
+      databaseAdapter.add(requestDBEntry);
+
+    }
+  });
 
   let checkDomain = url.hostname;
   if (requestInfo.initiator) {

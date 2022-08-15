@@ -31,7 +31,6 @@ function getStorageValue(key) {
 const load = async () => {
     const str = await getStorageValue("requests");
     if (str && str != "") {
-
         window.database = JSON.parse(str);
     }
 }
@@ -40,6 +39,13 @@ const save = async () => {
     await saveStorageValue("requests", JSON.stringify(window.database));
 }
 
+function debounce(func, timeout = 500) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+}
 
 class DatabaseAdapter {
 
@@ -47,17 +53,42 @@ class DatabaseAdapter {
         this.table = table;
     }
 
-    get = (filter) => {
+    persist = () => {
+        return debounce(() => {
+            save();
+        })
+    }
+
+    // This part was the reason for missing SCION domain indicators.
+    // Here we need to differentiate who is calling
+    // The databaseAdapter created from background.js
+    // Will be kept in memory all the time, which means we can safely just
+    // Write into memory. The persisting to the synced storage
+    // Will be debounced to avoid too many writes.
+    // The databaseAdapter from the popup.js will be created from scratch
+    // every time the popup opens, which means it needs to fetch the
+    // resources from storage, by passing loadFromStorage=true
+    get = (filter, loadFromStorage) => {
 
         return new Promise(resolve => {
-            load().then(() => {
+            if (loadFromStorage) {
+                load().then(() => {
+                    let filteredRequests = window.database[this.table];
+                    Object.keys(filter).forEach((key) => {
+                        filteredRequests = filteredRequests.filter(r => r[key] === filter[key]);
+                    });
+
+                    resolve(filteredRequests);
+                })
+            } else {
                 let filteredRequests = window.database[this.table];
                 Object.keys(filter).forEach((key) => {
                     filteredRequests = filteredRequests.filter(r => r[key] === filter[key]);
                 });
 
                 resolve(filteredRequests);
-            })
+            }
+
 
         });
 
@@ -66,7 +97,7 @@ class DatabaseAdapter {
 
     first = (filter) => {
         return new Promise(resolve => {
-            load();
+            // load();
             let filteredRequests = window.database[this.table];
             Object.keys(filter).forEach((key) => {
                 filteredRequests = filteredRequests.filter(r => r[key] === filter[key]);
@@ -79,21 +110,53 @@ class DatabaseAdapter {
         });
     }
 
-    add = (entry) => {
+    // replaceFilter is an Object that contains properties
+    // which are used to filter the list and if there is a match
+    // This one will be updated instead of adding a new one
+    add = (entry, replaceFilter) => {
         return new Promise(resolve => {
-            load().then(() => {
-                // We need to keep the list small for now, since 
-                // This storage thing can only handle 8KB...
-                while (window.database[this.table].length > 50) {
-                    window.database[this.table].shift();
+            // load().then(() => {
+            // We need to keep the list small for now, since 
+            // This storage thing can only handle 8KB...
+            while (window.database[this.table].length > 50) {
+                window.database[this.table].shift();
+            }
+
+            if (replaceFilter) {
+
+                let existingElementIndex = window.database[this.table].findIndex(e => {
+                    let match = true;
+                    Object.keys(replaceFilter).forEach(key => {
+                        // Only one property needs to differ
+                        if (e[key] != replaceFilter[key]) {
+                            match = false;
+                        }
+                    });
+                    return match;
+                });
+                if (existingElementIndex >= 0) {
+                    let existingElement = {
+                        ...window.database[this.table][existingElementIndex],
+                        ...entry
+                    };
+                    window.database[this.table][existingElementIndex] = existingElement;
+
+                } else {
+                    window.database[this.table].push(entry);
                 }
 
+            } else {
                 window.database[this.table].push(entry);
-                save().then(() => {
-                    resolve(entry);
-                });
+            }
 
-            })
+
+            // save().then(() => {
+            const persist = this.persist();
+            persist();
+            resolve(entry);
+            //  });
+
+            // })
 
         })
     }
@@ -107,6 +170,8 @@ class DatabaseAdapter {
             };
 
             window.database[this.table][entryIndex] = updateEntry;
+            const persist = this.persist();
+            persist();
             resolve(updateEntry);
         })
     }

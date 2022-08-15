@@ -9,7 +9,7 @@ const lineRunning = document.getElementById("lineRunning");
 const scionmode = document.getElementById("scionmode");
 const mainDomain = document.getElementById("maindomain");
 
-var perSiteStrictMode = {}; sad
+var perSiteStrictMode = {};
 var popupMainDomain;
 
 window.onload = function () {
@@ -113,7 +113,7 @@ async function loadRequestInfo() {
     var activeTabId = activeTab.id; // or do whatever you need
     const url = new URL(activeTab.url);
     popupMainDomain = url.hostname;
-    let requests = await databaseAdapter.get({ mainDomain: url.hostname });
+    let requests = await databaseAdapter.get({ mainDomain: url.hostname }, true);
     const mainDomainSCIONEnabled = requests.find(r => r.tabId === activeTabId && r.domain === url.hostname && r.scionEnabled);
     const scionsupport = document.getElementById("scionsupport");
 
