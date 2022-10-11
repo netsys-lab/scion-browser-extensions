@@ -12,10 +12,15 @@
     "https://*/*",
     "http://localhost/*"
   ],
-  "omnibox": { "keyword" : "scion" },
+  "omnibox": {
+    "keyword": "scion"
+  },
   "options_page": "options.html",
   "background": {
-    "scripts": ["shared/storage.js", "background.js"],
+    "scripts": [
+      "shared/storage.js",
+      "background.js"
+    ],
     "persistent": true
   },
   "browser_action": {
