@@ -8,9 +8,77 @@ const checkboxRunning = document.getElementById('checkboxRunning');
 const lineRunning = document.getElementById("lineRunning");
 const scionmode = document.getElementById("scionmode");
 const mainDomain = document.getElementById("maindomain");
+const pathUsageContainer = document.getElementById("path-usage-container");
 
 var perSiteStrictMode = {};
 var popupMainDomain;
+
+function humanFileSize(bytes, si = false, dp = 1) {
+  const thresh = si ? 1000 : 1024;
+
+  if (Math.abs(bytes) < thresh) {
+    return bytes + ' B';
+  }
+
+  const units = si
+    ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+  let u = -1;
+  const r = 10 ** dp;
+
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+
+  return bytes.toFixed(dp) + ' ' + units[u];
+}
+
+const newPathUsageChild = (pathUsage, index) => {
+  // This is at the moment just for presentation purposes and needs to be
+  // rewritten in the end...
+  const isds = new Set(pathUsage.Path.split(" -> ").map(v => v.split("-")[0]));
+  const isdMap = {
+    19: "EU",
+    17: "CH",
+    16: "AWS",
+    18: "US",
+  }
+
+  return (
+    `<div class="ac-sub">
+      <input class="ac-input" id="ac-${index}" name="ac-${index}" type="checkbox" />
+      <label class="ac-label" for="ac-${index}">${pathUsage.Domain}</label>
+      <article class="ac-sub-text">
+        <p><b>Strategy:</b> ${pathUsage.Strategy}</p>
+        <p><b>Usage:</b> ${humanFileSize(pathUsage.Received)}</p>
+        <p><b>ISD: </b> ${[...isds].map(isd => `${isd} (${isdMap[isd]})`).join(", ")}</p >
+    <p><b>Path:</b> ${pathUsage.Path}</p>
+      </article >
+    </div > `
+  )
+}
+
+const updatePathUsage = () => {
+  pathUsageContainer.innerHTML = "";
+  fetch("http://localhost:8888/pathUsage", {
+    method: "GET"
+  }).then(response => {
+
+    if (response.status === 200) {
+      response.json().then(res => {
+        const startIndex = 2; // The first indices are already used the parent container
+        res.forEach((pathUsage, i) => {
+          pathUsageContainer.innerHTML += newPathUsageChild(pathUsage, i + startIndex);
+        })
+      });
+    }
+  });
+
+
+};
+
 
 window.onload = function () {
 
@@ -33,6 +101,8 @@ window.onload = function () {
       headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
     }
   });
+
+  updatePathUsage();
 }
 
 // Start/Stop global forwarding
