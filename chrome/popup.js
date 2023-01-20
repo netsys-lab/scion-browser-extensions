@@ -44,7 +44,24 @@ const newPathUsageChild = (pathUsage, index) => {
     17: "CH",
     16: "AWS",
     18: "US",
+    21: "JP",
+    22: "TW",
+    25: "CN",
+    20: "KR",
+    26: "KREONET"
   }
+  const flagMap = {
+    "EU": "images/european-union.png",
+    "CH": "images/switzerland.png",
+    "AWS": "images/amazon.png",
+    "US" :"images/united-states.png",
+    "JP": "images/japan.png",
+    "TW": "images/taiwan.png",
+    "CN": "images/china.png",
+    "KR": "images/south-korea.png",
+    "KREONET": "",
+  }
+
 
   return (
     `<div class="ac-sub">
@@ -53,8 +70,24 @@ const newPathUsageChild = (pathUsage, index) => {
       <article class="ac-sub-text">
         <p><b>Strategy:</b> ${pathUsage.Strategy}</p>
         <p><b>Usage:</b> ${humanFileSize(pathUsage.Received)}</p>
-        <p><b>ISD: </b> ${[...isds].map(isd => `${isd} (${isdMap[isd]})`).join(", ")}</p >
-    <p><b>Path:</b> ${pathUsage.Path}</p>
+        <p><b>ISDs:</b> </p>
+        <div class="flag-container">
+        ${[...isds].map(isd => `<div class="flag">
+                                <img src=${flagMap[isdMap[isd]]}>
+                                <div class="description">
+                                  <p>(${isdMap[isd]})</p>
+                                </div>
+                              </div>
+                                `).join("")}
+        </div>
+       
+        <div class="ac-sub">
+          <input class="ac-input" id="ac-${index}-path" name="ac-${index}-path" type="checkbox" />
+          <label class="ac-label" for="ac-${index}-path"><b>Path:</b></label>
+          <article class="ac-sub-text">
+           <p>${pathUsage.Path}</p>
+          </article >
+        </div >
       </article >
     </div > `
   )
