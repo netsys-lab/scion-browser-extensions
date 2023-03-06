@@ -200,9 +200,20 @@ function deleteHosts(hostlist) {
   });
 }
 
-function openOptions() {
+document.getElementById("setPolicyButton")
+    .addEventListener('click', function () {
+      const sequence = document.getElementById('sequenceTextBox').value;
 
-}
+      var req = new XMLHttpRequest();
+      req.open("PUT", "http://localhost:8888/setPolicy", true);
+      req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+      req.onreadystatechange = function () {
+        if (req.readyState == 4) {
+          console.log("Response code to setSequencePolicy:" + req.status);
+        }
+      };
+      req.send(JSON.stringify(sequence));
+    });
 
 var getRequestsDatabaseAdapter;
 async function loadRequestInfo() {

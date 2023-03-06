@@ -10,7 +10,7 @@
     "webRequest",
     "webRequestBlocking",
     "https://*/*",
-    "http://localhost/*"
+    "http://*/*"
   ],
   "omnibox": {
     "keyword": "scion"
