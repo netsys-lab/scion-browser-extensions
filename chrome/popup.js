@@ -39,17 +39,6 @@ const newPathUsageChild = (pathUsage, index) => {
   // This is at the moment just for presentation purposes and needs to be
   // rewritten in the end...
   const isds = new Set(pathUsage.Path.split(" -> ").map(v => v.split("-")[0]));
-  const isdMap = {
-    19: "EU",
-    17: "CH",
-    16: "AWS",
-    18: "US",
-    21: "JP",
-    22: "TW",
-    25: "CN",
-    20: "KR",
-    26: "KREONET"
-  }
   const flagMap = {
     "EU": "images/european-union.png",
     "CH": "images/switzerland.png",
@@ -59,9 +48,15 @@ const newPathUsageChild = (pathUsage, index) => {
     "TW": "images/taiwan.png",
     "CN": "images/china.png",
     "KR": "images/south-korea.png",
-    "KREONET": "",
+    "KREONET": "images/south-korea.png",
+    "AS": "images/asia.png",
+    "NA": "images/north-america.png",
+    "SSFN": "images/switzerland.png",
+    "SCIREN": "images/scion-0.png",
+    "HVR": "images/hin.png",
+    "RESERVED": "images/unknown.png",
+    
   }
-
 
   return (
     `<div class="ac-sub">
@@ -73,9 +68,9 @@ const newPathUsageChild = (pathUsage, index) => {
         <p><b>ISDs:</b> </p>
         <div class="flag-container">
         ${[...isds].map(isd => `<div class="flag">
-                                <img src=${flagMap[isdMap[isd]]}>
+                                <img src=${flagMap[returnCountryCode(isd)]}>
                                 <div class="description">
-                                  <p>(${isdMap[isd]})</p>
+                                  <p>(${returnCountryCode(isd)})</p>
                                 </div>
                               </div>
                                 `).join("")}
@@ -91,6 +86,36 @@ const newPathUsageChild = (pathUsage, index) => {
       </article >
     </div > `
   )
+}
+
+function returnCountryCode(isd){
+  const isdMap = {
+    // Assignments used by SCIONLab
+    19: "EU",
+    17: "CH",
+    16: "AWS",
+    18: "US",
+    21: "JP",
+    22: "TW",
+    25: "CN",
+    20: "KR",
+    26: "KREONET",
+    // Assignments used by the production network
+    64: "CH",
+    65: "EU",
+    66: "AS",
+    67: "NA",
+    68: "RESERVED",
+    69: "RESERVED",
+    70: "SSFN",
+    71: "SCIREN",
+    72: "HVR"
+  }
+  let code = isdMap[isd];
+  if (code === undefined){
+    return "??"
+  } 
+  return code
 }
 
 const updatePathUsage = () => {
