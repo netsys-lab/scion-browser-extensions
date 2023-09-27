@@ -261,11 +261,29 @@ function onBeforeRedirect(details) {
 // Skip throws an error in the redirect-or-error handler: No SCION support
 // For the domain
 function onErrorOccurred(details) {
+  console.log("Error: ", details.error);
+  if (details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
+    chrome.tabs.update(details.tabId, { url: "http://localhost:8888/error?url="+details.url });
+  }
+
   if (details.url.startsWith("http://localhost:8888/r")) {
     const url = new URL(details.url);
     // The actual URL that we need is in ?url=$url
     const target = url.search.split("=")[1];
     const targetUrl = new URL(target);
     knownNonSCION[targetUrl.hostname] = true;
+  }
+}
+
+function printAllFields(obj) {
+  for (let field in obj) {
+      if (typeof obj[field] === "object") {
+          // If the field is an object, print its fields recursively
+          console.log(`${field}:`);
+          printAllFields(obj[field]);
+      } else {
+          // If the field is a primitive type, print its value
+          console.log(`${field}: ${obj[field]}`);
+      }
   }
 }
