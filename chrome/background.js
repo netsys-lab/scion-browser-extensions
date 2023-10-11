@@ -53,6 +53,30 @@ chrome.proxy.settings.set(
   { value: config, scope: 'regular' },
   function () { });
 
+function allowAllgeofence(value) {
+  console.log(value)
+  if (value){
+    let whiteArray = new Array()
+    whiteArray.push("+")
+
+    var req = new XMLHttpRequest();
+    req.open("PUT", "http://localhost:8888/setPolicy", true);
+    req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+    req.onreadystatechange = function () {
+      if (req.readyState == 4) {
+        console.log("Response code to setISDPolicy:" + req.status);
+      }
+    };
+    req.send(JSON.stringify(whiteArray));
+    }
+  else{
+    getStorageValue('isd_whitelist').then((isdSet) => {
+      console.log(isdSet)
+      geofence(isdSet);
+  });
+  }
+}
+
 function geofence(isdList) {
   let whiteArray = new Array()
   for (const isd of isdList) {
@@ -83,6 +107,9 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     perSiteStrictMode = changes.perSiteStrictMode?.newValue;
   } else if (namespace == 'sync' && changes.globalStrictMode?.newValue !== undefined) {
     globalStrictMode = changes.globalStrictMode?.newValue;
+  } else if (namespace == 'sync' && changes.isd_all?.newValue !== undefined) {
+    console.log(changes.isd_all.newValue)
+    allowAllgeofence(changes.isd_all.newValue);
   }
 
 
@@ -258,12 +285,97 @@ function onBeforeRedirect(details) {
   }
 }
 
+const errorHTML = `
+<html>
+<head>
+    <title>Error Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+        .error-banner {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 40px;
+        }
+        .error-message {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin: 20px;
+            padding: 20px;
+            text-align: center;
+            font-size: 28px;
+        }
+        .details-section {
+          background-color: #fff;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          margin: 20px;
+          padding: 20px;
+          text-align: center;
+          font-size: 20px;
+      }
+    </style>
+</head>
+<body>
+    <div class="error-banner">
+      The SCION extension is unable to load the website
+    </div>
+`;
+
 // Skip throws an error in the redirect-or-error handler: No SCION support
 // For the domain
 function onErrorOccurred(details) {
+  console.log(details)
   console.log("Error: ", details.error);
-  if (details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
-    chrome.tabs.update(details.tabId, { url: "http://localhost:8888/error?url="+details.url });
+  let tabId = details.tabId;
+  if (details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
+    fetch("http://localhost:8888/error?url="+details.url, {
+      method: "GET"
+    }).then(response => {
+
+      if (response.status === 200) {
+        response.text().then(customErrorMessage => {
+
+          let trimmedMessage = customErrorMessage.replace("INTERNAL_ERROR (local): ", "");
+
+
+          const updatedErrorHTML = errorHTML + `
+          <div class="error-message" id="custom-error">
+            ${trimmedMessage} (Destination AS for ${details.url}).
+               <div class="details-section" id="details">
+              Please check your Geofencing settings or contact your IT service desk.
+              </div>
+          </div>
+          </body>
+          </html>
+          `
+
+          // Store the updated HTML content in a data URL
+          const blob = new Blob([updatedErrorHTML], { type: 'text/html' });
+          const localErrorURL = URL.createObjectURL(blob);
+          chrome.tabs.create({url: localErrorURL});
+        });
+      }else{
+        chrome.tabs.update(
+          tabId,
+          {url: chrome.runtime.getURL("error.html")});
+      }
+    }).catch((e) => {
+      console.warn("Resolution failed");
+      console.error(e);
+      chrome.tabs.update(
+        tabId,
+        {url: chrome.runtime.getURL("error.html")});
+    });
   }
 
   if (details.url.startsWith("http://localhost:8888/r")) {

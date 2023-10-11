@@ -38,7 +38,11 @@ window.onload = function () {
     getStorageValue('isd_whitelist').then((isdSet) => {
         displayToggleISD(isdSet);
     });
+    getStorageValue('isd_all').then(value =>{
+        document.getElementById("toggleRunning").checked = value
+    });
     registerToggleISDHandler();
+    registerToggleAllHandler();
 }
 
 function displayToggleISD(isdSet) {
@@ -64,11 +68,27 @@ function registerToggleISDHandler() {
 };
 
 
+function registerToggleAllHandler() {
+    const allToggle = document.getElementById("toggleRunning");
+    console.log(allToggle)
+    const parentDiv = allToggle.parentElement;
+    parentDiv.onclick = () => {
+        toggleAll(allToggle.id);
+    }
+};
+
 function toggleISD(checked_id) {
     var isdToggle = document.getElementById(checked_id);
     isdToggle.checked = !isdToggle.checked;
     var id = checked_id.split("toggleISD-")[1];
     applyWhitelist(id, isdToggle.checked);
+}
+
+async function toggleAll(checked_id) {
+    var isdToggle = document.getElementById(checked_id);
+    isdToggle.checked = !isdToggle.checked;
+    console.log(isdToggle.checked)
+    await saveStorageValue('isd_all', isdToggle.checked);
 }
 
 

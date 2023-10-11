@@ -186,23 +186,6 @@
       <input class="absolute opacity-0" id="tab-single-two" type="radio" name="tabs2">
       <label class="block leading-normal cursor-pointer" for="tab-single-two">Geofencing (SCIONLab)</label>
       <div class="tab-content overflow-hidden border-l-2 border-indigo-500 leading-normal">
-        <div class="flex justify-center mb-4 w-100">
-          <label for="toogleA" class="flex items-between cursor-pointer">
-            <div class="mr-3 text-gray-700 font-medium text-sm ">
-              Allow only local ISD traffic:
-            </div>
-            <!-- toggle -->
-            <div class="relative" id="checkboxRunning" onclick="">
-              <!-- input -->
-              <input id="toggleRunning" type="checkbox" class="sr-only" onchange="" />
-              <!-- line -->
-              <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
-              <!-- dot -->
-              <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
-            </div>
-            <!-- label -->
-          </label>
-        </div>
         <p></p>
         <table class="table-auto w-full">
           <thead class="text-xs font-semibold uppercase text-gray-400 bg-gray-50">
@@ -341,12 +324,12 @@
         <div class="flex justify-center mb-4 w-100">
           <label for="toogleA" class="flex items-between cursor-pointer">
             <div class="mr-3 text-gray-700 font-medium text-sm ">
-              Allow only local ISD traffic:
+              Allow all traffic:
             </div>
             <!-- toggle -->
             <div class="relative" id="checkboxRunning" onclick="">
               <!-- input -->
-              <input id="toggleRunning" type="checkbox" class="sr-only" onchange="" />
+              <input id="toggleRunning" type="checkbox" class="sr-only" onchange=""/>
               <!-- line -->
               <div class="w-8 h-3 bg-gray-400 rounded-full shadow-inner"></div>
               <!-- dot -->
