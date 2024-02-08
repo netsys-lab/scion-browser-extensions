@@ -43,7 +43,7 @@ const newPathUsageChild = (pathUsage, index) => {
     "EU": "images/european-union.png",
     "CH": "images/switzerland.png",
     "AWS": "images/amazon.png",
-    "US" :"images/united-states.png",
+    "US": "images/united-states.png",
     "JP": "images/japan.png",
     "TW": "images/taiwan.png",
     "CN": "images/china.png",
@@ -55,7 +55,7 @@ const newPathUsageChild = (pathUsage, index) => {
     "SCIREN": "images/scion-0.png",
     "HVR": "images/hin.png",
     "RESERVED": "images/unknown.png",
-    
+    "UNKNOWN": "images/unknown.png",
   }
 
   return (
@@ -88,7 +88,7 @@ const newPathUsageChild = (pathUsage, index) => {
   )
 }
 
-function returnCountryCode(isd){
+function returnCountryCode(isd) {
   const isdMap = {
     // Assignments used by SCIONLab
     19: "EU",
@@ -112,9 +112,9 @@ function returnCountryCode(isd){
     72: "HVR"
   }
   let code = isdMap[isd];
-  if (code === undefined){
-    return "??"
-  } 
+  if (code === undefined) {
+    return "UNKNOWN"
+  }
   return code
 }
 
