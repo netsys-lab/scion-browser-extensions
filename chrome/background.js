@@ -55,7 +55,7 @@ chrome.proxy.settings.set(
 
 function allowAllgeofence(value) {
   console.log(value)
-  if (value){
+  if (value) {
     let whiteArray = new Array()
     whiteArray.push("+")
 
@@ -68,12 +68,12 @@ function allowAllgeofence(value) {
       }
     };
     req.send(JSON.stringify(whiteArray));
-    }
-  else{
+  }
+  else {
     getStorageValue('isd_whitelist').then((isdSet) => {
       console.log(isdSet)
       geofence(isdSet);
-  });
+    });
   }
 }
 
@@ -184,7 +184,7 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 });
 
 
-/* Request intercepting */
+/* Request intercepting (see https://developer.chrome.com/docs/extensions/reference/api/webRequest#type-BlockingResponse) */
 chrome.webRequest.onBeforeRequest.addListener(
   onBeforeRequest, { urls: ["<all_urls>"] }, ['blocking']);
 
@@ -193,6 +193,9 @@ chrome.webRequest.onBeforeRedirect.addListener(
 
 chrome.webRequest.onErrorOccurred.addListener(
   onErrorOccurred, { urls: ["<all_urls>"] });
+
+chrome.webRequest.onHeadersReceived.addListener(
+  onHeadersReceived, { urls: ["<all_urls>"] }, ['blocking']);
 
 function onBeforeRequest(requestInfo) {
 
@@ -338,7 +341,7 @@ function onErrorOccurred(details) {
   console.log("Error: ", details.error);
   let tabId = details.tabId;
   if (details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
-    fetch("http://localhost:8888/error?url="+details.url, {
+    fetch("http://localhost:8888/error?url=" + details.url, {
       method: "GET"
     }).then(response => {
 
@@ -362,40 +365,46 @@ function onErrorOccurred(details) {
           // Store the updated HTML content in a data URL
           const blob = new Blob([updatedErrorHTML], { type: 'text/html' });
           const localErrorURL = URL.createObjectURL(blob);
-          chrome.tabs.create({url: localErrorURL});
+          chrome.tabs.create({ url: localErrorURL });
         });
-      }else{
+      } else {
         chrome.tabs.update(
           tabId,
-          {url: chrome.runtime.getURL("error.html")});
+          { url: chrome.runtime.getURL("error.html") });
       }
     }).catch((e) => {
       console.warn("Resolution failed");
       console.error(e);
       chrome.tabs.update(
         tabId,
-        {url: chrome.runtime.getURL("error.html")});
+        { url: chrome.runtime.getURL("error.html") });
     });
-  }
-
-  if (details.url.startsWith("http://localhost:8888/r")) {
-    const url = new URL(details.url);
-    // The actual URL that we need is in ?url=$url
-    const target = url.search.split("=")[1];
-    const targetUrl = new URL(target);
-    knownNonSCION[targetUrl.hostname] = true;
   }
 }
 
 function printAllFields(obj) {
   for (let field in obj) {
-      if (typeof obj[field] === "object") {
-          // If the field is an object, print its fields recursively
-          console.log(`${field}:`);
-          printAllFields(obj[field]);
-      } else {
-          // If the field is a primitive type, print its value
-          console.log(`${field}: ${obj[field]}`);
-      }
+    if (typeof obj[field] === "object") {
+      // If the field is an object, print its fields recursively
+      console.log(`${field}:`);
+      printAllFields(obj[field]);
+    } else {
+      // If the field is a primitive type, print its value
+      console.log(`${field}: ${obj[field]}`);
+    }
+  }
+}
+
+function onHeadersReceived(details) {
+  if (details.url.startsWith("http://localhost:8888/r") && details.statusCode >= 500) {
+    const url = new URL(details.url);
+    // The actual URL that we need is in ?url=$url
+    const target = url.search.split("=")[1];
+    const targetUrl = new URL(target);
+    knownNonSCION[targetUrl.hostname] = true;
+
+    // we do not use { cancel: true } here but redirect another time to make sure 
+    // the target domain is listed as block and not the skip proxy address
+    return { redirectUrl: targetUrl.toString() };
   }
 }
