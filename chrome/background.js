@@ -3,24 +3,18 @@
 
 /** Background State */
 let globalStrictMode = false;
-let perSiteStrictMode = {
-  // "www.scionlab.org": true,
-};
-let knownNonSCION = {
-
-};
-
-let knownSCION = {
-
-};
+let perSiteStrictMode = {};
+let knownNonSCION = {};
+let knownSCION = {};
 let policyCookie = null
 
 // This is a bit hacky but probably easier than wrapping everything
 // in a bunder step
 const imports = [
-  'database.js'
+    'database.js'
 ];
 
+// communication between the popup/options and background happens over the database
 var getRequestsDatabaseAdapter;
 
 // TODO: if there are some race conditions, add a startup
@@ -28,279 +22,281 @@ var getRequestsDatabaseAdapter;
 // Let's later move to something that allows using imports and
 // maybe even typescript, e.g. https://github.com/abhijithvijayan/web-extension-starter
 (async () => {
-  const src = chrome.extension.getURL('database.js');
-  const req = await import(src);
-  getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
+    const src = chrome.extension.getURL('database.js');
+    const req = await import(src);
+    getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
 })();
 
 getStorageValue('perSiteStrictMode').then((val) => {
-  perSiteStrictMode = val || {}; // Here we may get undefined which is bad
+    perSiteStrictMode = val || {}; // Here we may get undefined which is bad
 });
 
 getStorageValue('globalStrictMode').then((val) => {
-  globalStrictMode = !!val;
+    globalStrictMode = !!val;
 });
 
 /* PAC configuration */
 var config = {
-  mode: "pac_script",
-  pacScript: {
-    data: "function FindProxyForURL(url, host) {\n" +
-      "    return 'PROXY localhost:8888';\n" +
-      "}",
-  }
+    mode: "pac_script",
+    pacScript: {
+        data:
+            "function FindProxyForURL(url, host) {\n" +
+            "    return 'PROXY localhost:8888';\n" +
+            "}",
+    }
 };
-chrome.proxy.settings.set(
-  { value: config, scope: 'regular' },
-  function () { });
+chrome.proxy.settings.set({ value: config, scope: 'regular' }, function () {
+    chrome.proxy.settings.get({}, function (config) {
+        console.log(config);
+    });
+});
 
 function allowAllgeofence(allowAll) {
-  console.log("allowAllgeofence: ", allowAll)
+    console.log("allowAllgeofence: ", allowAll)
 
-  if (allowAll) {
-    let whitelist = new Array()
-    whitelist.push("+")
-    setPolicy(whitelist)
-    return
-  }
+    if (allowAll) {
+        let whitelist = new Array()
+        whitelist.push("+")
+        setPolicy(whitelist)
+        return
+    }
 
     getStorageValue('isd_whitelist').then((isdSet) => {
-      console.log(isdSet)
-      geofence(isdSet);
+        console.log(isdSet)
+        geofence(isdSet);
     });
 }
 
 function geofence(isdList) {
-  console.log("geofence: ", isdList)
+    console.log("geofence: ", isdList)
 
-  let whitelist = new Array()
-  for (const isd of isdList) {
-    whitelist.push("+ " + isd);
-  }
-  whitelist.push("-") // deny everything else
-  setPolicy(whitelist)
+    let whitelist = new Array()
+    for (const isd of isdList) {
+        whitelist.push("+ " + isd);
+    }
+    whitelist.push("-") // deny everything else
+    setPolicy(whitelist)
 }
 
 function setPolicy(policy) {
-  var req = new XMLHttpRequest();
-  req.open("PUT", "http://localhost:8888/setPolicy", true);
-  req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-  req.onreadystatechange = function () {
-    if (req.readyState == XMLHttpRequest.DONE) {
-      // The fetch operation is complete. This could mean that either the data transfer has been completed successfully or failed.
-      console.log("Response code to setISDPolicy:" + req.status);
-    }
-  };
-  req.send(JSON.stringify(policy));
-  console.log("set policy: ", JSON.stringify(policy))
+    var req = new XMLHttpRequest();
+    req.open("PUT", "http://localhost:8888/setPolicy", true);
+    req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+    req.onreadystatechange = function () {
+        if (req.readyState == XMLHttpRequest.DONE) {
+            // The fetch operation is complete. This could mean that either the data transfer has been completed successfully or failed.
+            console.log("Response code to setISDPolicy:" + req.status);
+        }
+    };
+    req.send(JSON.stringify(policy));
+    console.log("set policy: ", JSON.stringify(policy))
 
-  chrome.cookies.getAll({ name: "caddy-scion-forward-proxy" }, function (cookies) {
-    console.log("found cookies: " + cookies);
-    if (cookies.length > 1) {
-      console.log("expected at most one cookie")
-    }
+    chrome.cookies.getAll({ name: "caddy-scion-forward-proxy" }, function (cookies) {
+        console.log("found cookies: " + cookies);
+        if (cookies.length > 1) {
+            console.log("expected at most one cookie")
+        }
 
-    if (cookies.length != 0) {
-      policyCookie = cookies[0]
-    }
-  })
+        if (cookies.length != 0) {
+            policyCookie = cookies[0]
+        }
+    })
 
 }
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  // In case we disable running for the extension, lets put an empty set for now
-  // Later, we could remove the PAC script, but doesn't impact us now...
-  if (namespace == 'sync' && changes.extension_running?.newValue !== undefined) {
-    updateRunningIcon(changes.extension_running.newValue);
-  }
-  else if (namespace == 'sync' && changes.isd_whitelist?.newValue) {
-    geofence(changes.isd_whitelist.newValue);
-  } else if (namespace == 'sync' && changes.perSiteStrictMode?.newValue !== undefined) {
-    perSiteStrictMode = changes.perSiteStrictMode?.newValue;
-  } else if (namespace == 'sync' && changes.globalStrictMode?.newValue !== undefined) {
-    globalStrictMode = changes.globalStrictMode?.newValue;
-  } else if (namespace == 'sync' && changes.isd_all?.newValue !== undefined) {
-    console.log(changes.isd_all.newValue)
-    allowAllgeofence(changes.isd_all.newValue);
-  }
-
-
+    // In case we disable running for the extension, lets put an empty set for now
+    // Later, we could remove the PAC script, but doesn't impact us now...
+    if (namespace == 'sync' && changes.extension_running?.newValue !== undefined) {
+        updateRunningIcon(changes.extension_running.newValue);
+    } else if (namespace == 'sync' && changes.isd_whitelist?.newValue) {
+        geofence(changes.isd_whitelist.newValue);
+    } else if (namespace == 'sync' && changes.perSiteStrictMode?.newValue !== undefined) {
+        perSiteStrictMode = changes.perSiteStrictMode?.newValue;
+    } else if (namespace == 'sync' && changes.globalStrictMode?.newValue !== undefined) {
+        globalStrictMode = changes.globalStrictMode?.newValue;
+    } else if (namespace == 'sync' && changes.isd_all?.newValue !== undefined) {
+        allowAllgeofence(changes.isd_all.newValue);
+    }
 })
 
 // Displays a green/blue SCION icon depending on the current url is
 // being forwarded via SCION
 async function handleTabChange(tab) {
+    if (tab.active && tab.url) {
+        const url = new URL(tab.url);
+        const databaseAdapter = await getRequestsDatabaseAdapter();
+        let requests = await databaseAdapter.get({ mainDomain: url.hostname });
+        var mixedContent;
 
-  if (tab.active && tab.url) {
-    const url = new URL(tab.url);
-    const databaseAdapter = await getRequestsDatabaseAdapter();
-    let requests = await databaseAdapter.get({ mainDomain: url.hostname });
-    var mixedContent;
-
-    const mainDomainSCIONEnabled = requests.find(r => r.tabId === tab.id && r.domain === url.hostname && r.scionEnabled);
-    requests.forEach(r => {
-      if (!r.scionEnabled) {
-        mixedContent = true;
-      }
-    });
-    if (mainDomainSCIONEnabled) {
-      if (mixedContent) {
-        chrome.browserAction.setIcon({ path: "/images/scion-38_mixed.jpg" });
-      } else {
-        chrome.browserAction.setIcon({ path: "/images/scion-38_enabled.jpg" });
-      }
-    } else {
-      chrome.browserAction.setIcon({ path: "/images/scion-38_not_available.jpg" });
+        const mainDomainSCIONEnabled = requests.find(r => r.tabId === tab.id && r.domain === url.hostname && r.scionEnabled);
+        requests.forEach(r => {
+            if (!r.scionEnabled) {
+                mixedContent = true;
+            }
+        });
+        if (mainDomainSCIONEnabled) {
+            if (mixedContent) {
+                chrome.browserAction.setIcon({ path: "/images/scion-38_mixed.jpg" });
+            } else {
+                chrome.browserAction.setIcon({ path: "/images/scion-38_enabled.jpg" });
+            }
+        } else {
+            chrome.browserAction.setIcon({ path: "/images/scion-38_not_available.jpg" });
+        }
     }
-  }
 }
 
-chrome.tabs.onUpdated.addListener(function
-  (tabId, changeInfo, tab) {
-  // read changeInfo data and do something with it (like read the url)
-  if (changeInfo.url) {
-    handleTabChange(tab);
-
-  }
-}
-);
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+    // read changeInfo data and do something with it (like read the url)
+    if (changeInfo.url) {
+        handleTabChange(tab);
+    }
+});
 
 // Update icons and forwarding_enabled field depending on hostname of
 // current active tab
-chrome.tabs.onUpdated.addListener(function
-  (tabId, changeInfo, tab) {
-  // Url change in active tab
-  handleTabChange(tab);
-}
-);
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+    // Url change in active tab
+    handleTabChange(tab);
+});
 
 // Changes icon depending on the extension is running or not
 function updateRunningIcon(extensionRunning) {
-  if (extensionRunning) {
-    chrome.browserAction.setIcon({ path: "/images/scion-38.jpg" });
-  } else {
-    chrome.browserAction.setIcon({ path: "/images/scion-38_disabled.jpg" });
-  }
+    if (extensionRunning) {
+        chrome.browserAction.setIcon({ path: "/images/scion-38.jpg" });
+    } else {
+        chrome.browserAction.setIcon({ path: "/images/scion-38_disabled.jpg" });
+    }
 }
 
 // Do icon setup etc at startup
 getStorageValue('extension_running').then(extensionRunning => {
-  updateRunningIcon(extensionRunning);
+    updateRunningIcon(extensionRunning);
 });
 
 // User switches between tabs
 chrome.tabs.onActivated.addListener(function (activeInfo) {
-  chrome.tabs.get(activeInfo.tabId, (tab) => {
-    handleTabChange(tab);
-  });
+    chrome.tabs.get(activeInfo.tabId, (tab) => {
+        handleTabChange(tab);
+    });
 });
-
 
 /* Request intercepting (see https://developer.chrome.com/docs/extensions/reference/api/webRequest#type-BlockingResponse) */
 chrome.webRequest.onBeforeRequest.addListener(
-  onBeforeRequest, { urls: ["<all_urls>"] }, ['blocking']);
+    onBeforeRequest, { urls: ["<all_urls>"] }, ['blocking']);
 
 chrome.webRequest.onBeforeRedirect.addListener(
-  onBeforeRedirect, { urls: ["<all_urls>"] });
+    onBeforeRedirect, { urls: ["<all_urls>"] });
 
 chrome.webRequest.onErrorOccurred.addListener(
-  onErrorOccurred, { urls: ["<all_urls>"] });
+    onErrorOccurred, { urls: ["<all_urls>"] });
 
 chrome.webRequest.onHeadersReceived.addListener(
-  onHeadersReceived, { urls: ["<all_urls>"] }, ['blocking']);
+    onHeadersReceived, { urls: ["<all_urls>"] }, ['blocking']);
 
 chrome.webRequest.onBeforeSendHeaders.addListener(
-  onBeforeSendHeaders, { urls: ["<all_urls>"] }, ['blocking', 'requestHeaders', 'extraHeaders']);
+    onBeforeSendHeaders, { urls: ["<all_urls>"] }, ['blocking', 'requestHeaders', 'extraHeaders']);
 
 function onBeforeRequest(requestInfo) {
 
-  const url = new URL(requestInfo.url);
+    const url = new URL(requestInfo.url);
 
-  // Skip all weird requests...
-  if (url.hostname == "localhost") {
-    return {}
-  }
+    // Skip all weird requests...
+    if (url.hostname == "localhost") {
+        return {}
+    }
 
-  if (requestInfo.url.startsWith("chrome-extension")) {
-    return {};
-  }
+    if (requestInfo.url.startsWith("chrome-extension")) {
+        return {};
+    }
 
-  if (requestInfo.initiator && requestInfo.initiator.startsWith("chrome-extension")) {
-    return {};
-  }
+    if (requestInfo.initiator && requestInfo.initiator.startsWith("chrome-extension")) {
+        return {};
+    }
 
-  console.log("request" + JSON.stringify(requestInfo.url));
+    console.log("<onBeforeRequest> REQUEST URL: " + JSON.stringify(requestInfo.url));
 
-  const requestDBEntry = {
-    requestId: requestInfo.requestId,
-    tabId: requestInfo.tabId,
-    domain: url.hostname,
-    mainDomain: requestInfo.initiator ? new URL(requestInfo.initiator).hostname : '',
-  };
+    getRequestsDatabaseAdapter().then(databaseAdapter => {
+        const requestDBEntry = {
+            requestId: requestInfo.requestId,
+            tabId: requestInfo.tabId,
+            domain: url.hostname,
+            mainDomain: requestInfo.initiator ? new URL(requestInfo.initiator).hostname : '',
+        };
 
-  getRequestsDatabaseAdapter().then(databaseAdapter => {
-    // If we don't have any information about scion-enabled or not
-    if (!knownNonSCION[url.hostname] && !knownSCION[url.hostname]) {
-      // We can't do this in the onBeforeRedirect/onErrorOccured
-      // Because these things are only done in strict mode
-      // So we would loose all information for domains that are not in 
-      // (global) strict mode
-      fetch("http://localhost:8888/resolve?host=" + url.hostname, {
-        method: "GET"
-      }).then(response => {
+        // If we don't have any information about scion-enabled or not
+        if (!knownNonSCION[url.hostname] && !knownSCION[url.hostname]) {
+            // We can't do this in the onBeforeRedirect/onErrorOccured
+            // Because these things are only done in strict mode
+            // So we would loose all information for domains that are not in 
+            // (global) strict mode
+            console.log("<DB> to scion or not to scion: ", url.hostname)
 
-        if (response.status === 200) {
-          response.text().then(res => {
-            if (res != "") {
-              requestDBEntry.scionEnabled = true;
-            }
-            databaseAdapter.add(requestDBEntry, {
-              mainDomain: requestDBEntry.mainDomain,
-              scionEnabled: requestDBEntry.scionEnabled,
-              domain: requestDBEntry.domain,
+            fetch("http://localhost:8888/resolve?host=" + url.hostname, {
+                method: "GET"
+            }).then(response => {
+                if (response.status === 200) {
+                    response.text().then(res => {
+                        if (res != "") {
+                            requestDBEntry.scionEnabled = true;
+                            console.log("<DB> scion enabled (after resolve): ", url.hostname)
+                        } else {
+                            console.log("<DB> scion disabled (after resolve): ", url.hostname)
+                        }
+                        databaseAdapter.add(requestDBEntry, {
+                            mainDomain: requestDBEntry.mainDomain,
+                            scionEnabled: requestDBEntry.scionEnabled,
+                            domain: requestDBEntry.domain,
+                        });
+                    });
+                } else {
+                    console.warn("<DB> Resolution error ", response.status);
+                }
+            }).catch((e) => {
+                console.warn("<DB> Resolution failed");
+                console.error(e);
             });
-          });
+        } else {
+            requestDBEntry.scionEnabled = !!knownSCION[url.hostname];
+            console.log("<DB> scion enabled/disabled: ", requestDBEntry.scionEnabled, url.hostname)
+            databaseAdapter.add(requestDBEntry);
+
         }
-      }).catch((e) => {
-        console.warn("Resolution failed");
-        console.error(e);
-      });
-    } else {
-      requestDBEntry.scionEnabled = !!knownSCION[url.hostname];
-      databaseAdapter.add(requestDBEntry);
+    });
 
+    let checkDomain = url.hostname;
+    if (requestInfo.initiator) {
+        const mainDomain = new URL(requestInfo.initiator);
+        checkDomain = mainDomain.hostname;
     }
-  });
 
-  let checkDomain = url.hostname;
-  if (requestInfo.initiator) {
-    const mainDomain = new URL(requestInfo.initiator);
-    checkDomain = mainDomain.hostname;
-  }
-
-  // Check document for strict mode
-  if (globalStrictMode || perSiteStrictMode[checkDomain]) {
-    if (knownNonSCION[url.hostname]) {
-      return { cancel: true };
-    } else if (knownSCION[url.hostname]) {
-      return {};
-    } else {
-      return { redirectUrl: "http://localhost:8888/r?url=" + requestInfo.url };
+    // Check document for strict mode
+    if (globalStrictMode || perSiteStrictMode[checkDomain]) {
+        if (knownNonSCION[url.hostname]) {
+            console.log("<onBeforeRequest> known NON scion (strict): " + url.hostname);
+            return { cancel: true };
+        } else if (knownSCION[url.hostname]) {
+            console.log("<onBeforeRequest> known scion (strict): " + url.hostname);
+            return {};
+        } else {
+            console.log("<onBeforeRequest> resolve URL by redirect (strict): ", requestInfo.url)
+            return { redirectUrl: "http://localhost:8888/r?url=" + requestInfo.url };
+        }
     }
-  }
 
-  return {};
+    console.log("<onBeforeRequest> assumed non scion: " + url.hostname);
+    return {};
 }
-
-
 
 // Skip returns a valid redirect response, meaning there is SCION enabled 
 // and we can do this request again
 function onBeforeRedirect(details) {
-  if (details.redirectUrl && details.url.startsWith("http://localhost:8888/r")) {
-    const url = new URL(details.redirectUrl);
-    knownSCION[url.hostname] = true;
-  }
+    if (details.redirectUrl && details.url.startsWith("http://localhost:8888/r")) {
+        console.log("<onBeforeRedirect> known scion (after resolve): ", details.redirectUrl)
+        const url = new URL(details.redirectUrl);
+        knownSCION[url.hostname] = true;
+    }
 }
 
 const errorHTML = `
@@ -349,24 +345,26 @@ const errorHTML = `
     </div>
 `;
 
-// Skip throws an error in the redirect-or-error handler: No SCION support
-// For the domain
+// Skip throws and error in CONNECT request if there is no available path
 function onErrorOccurred(details) {
-  console.log(details)
-  console.log("Error: ", details.error);
-  let tabId = details.tabId;
-  if (details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
-    fetch("http://localhost:8888/error?url=" + details.url, {
-      method: "GET"
-    }).then(response => {
+    console.log("<onErrorOccurred> Error: ", details.error);
+    console.log(details)
 
-      if (response.status === 200) {
-        response.text().then(customErrorMessage => {
+    let tabId = details.tabId;
+    if (details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
+        console.log("resolve URL on error: ", details.url)
+        fetch("http://localhost:8888/error?url=" + details.url, {
+            method: "GET"
+        }).then(response => {
 
-          let trimmedMessage = customErrorMessage.replace("INTERNAL_ERROR (local): ", "");
+            if (response.status === 200) {
+                console.warn("Resolution success");
+                response.text().then(customErrorMessage => {
+
+                    let trimmedMessage = customErrorMessage.replace("INTERNAL_ERROR (local): ", "");
 
 
-          const updatedErrorHTML = errorHTML + `
+                    const updatedErrorHTML = errorHTML + `
           <div class="error-message" id="custom-error">
             ${trimmedMessage} (Destination AS for ${details.url}).
                <div class="details-section" id="details">
@@ -377,84 +375,90 @@ function onErrorOccurred(details) {
           </html>
           `
 
-          // Store the updated HTML content in a data URL
-          const blob = new Blob([updatedErrorHTML], { type: 'text/html' });
-          const localErrorURL = URL.createObjectURL(blob);
-          chrome.tabs.create({ url: localErrorURL });
+                    // Store the updated HTML content in a data URL
+                    const blob = new Blob([updatedErrorHTML], { type: 'text/html' });
+                    const localErrorURL = URL.createObjectURL(blob);
+                    chrome.tabs.create({ url: localErrorURL });
+                });
+            } else {
+                console.warn("Resolution error");
+                chrome.tabs.update(
+                    tabId,
+                    { url: chrome.runtime.getURL("error.html") });
+            }
+        }).catch((e) => {
+            console.warn("Resolution failed");
+            console.error(e);
+            chrome.tabs.update(
+                tabId,
+                { url: chrome.runtime.getURL("error.html") });
         });
-      } else {
-        chrome.tabs.update(
-          tabId,
-          { url: chrome.runtime.getURL("error.html") });
-      }
-    }).catch((e) => {
-      console.warn("Resolution failed");
-      console.error(e);
-      chrome.tabs.update(
-        tabId,
-        { url: chrome.runtime.getURL("error.html") });
-    });
-  }
+    }
 }
 
+// debugging funcion
 function printAllFields(obj) {
-  for (let field in obj) {
-    if (typeof obj[field] === "object") {
-      // If the field is an object, print its fields recursively
-      console.log(`${field}:`);
-      printAllFields(obj[field]);
-    } else {
-      // If the field is a primitive type, print its value
-      console.log(`${field}: ${obj[field]}`);
+    for (let field in obj) {
+        if (typeof obj[field] === "object") {
+            // If the field is an object, print its fields recursively
+            console.log(`${field}:`);
+            printAllFields(obj[field]);
+        } else {
+            // If the field is a primitive type, print its value
+            console.log(`${field}: ${obj[field]}`);
+        }
     }
-  }
 }
 
 function onBeforeSendHeaders(details) {
-  console.log("<onBeforeSendHeaders>", details.url)
+    console.log("<onBeforeSendHeaders>", details.url)
 
-  if (details.url.startsWith("http://localhost:8888") || policyCookie == null) {
-    // nothing to do in case there is no cookie or doing a request to the forward-proxy
-    return {}
-  }
-
-  let foundCookieHeader = false;
-  for (var i = 0; i < details.requestHeaders.length; ++i) {
-    if (details.requestHeaders[i].name === "Cookie") {
-      let cookies = details.requestHeaders[i].value.split(",")
-      let forwardProxyCookies = cookies.filter((c) => c.startsWith("caddy-scion-forward-proxy"));
-
-      if (forwardProxyCookies.length == 0) {
-        details.requestHeaders[i].value += "," + policyCookie.name + "=" + policyCookie.value
-        console.log("appended to Cookie header")
-      }
-
-      foundCookieHeader = true
-      break;
+    if (details.url.startsWith("http://localhost:8888") || policyCookie == null) {
+        // nothing to do in case there is no cookie or doing a request to the forward-proxy
+        return {}
     }
-  }
 
-  if (!foundCookieHeader) {
-    details.requestHeaders.push({
-      name: "Cookie",
-      value: policyCookie.name + "=" + policyCookie.value
-    })
-    console.log("added Cookie header")
-  }
+    let foundCookieHeader = false;
+    for (var i = 0; i < details.requestHeaders.length; ++i) {
+        if (details.requestHeaders[i].name === "Cookie") {
+            let cookies = details.requestHeaders[i].value.split(",")
+            let forwardProxyCookies = cookies.filter((c) => c.startsWith("caddy-scion-forward-proxy"));
 
-  return { requestHeaders: details.requestHeaders };
+            if (forwardProxyCookies.length == 0) {
+                details.requestHeaders[i].value += "," + policyCookie.name + "=" + policyCookie.value
+                console.log("appended to Cookie header")
+            }
+
+            foundCookieHeader = true
+            break;
+        }
+    }
+
+    if (!foundCookieHeader) {
+        details.requestHeaders.push({
+            name: "Cookie",
+            value: policyCookie.name + "=" + policyCookie.value
+        })
+        console.log("added Cookie header")
+    }
+
+    return { requestHeaders: details.requestHeaders };
 }
 
 function onHeadersReceived(details) {
-  if (details.url.startsWith("http://localhost:8888/r") && details.statusCode >= 500) {
-    const url = new URL(details.url);
-    // The actual URL that we need is in ?url=$url
-    const target = url.search.split("=")[1];
-    const targetUrl = new URL(target);
-    knownNonSCION[targetUrl.hostname] = true;
+    if (details.url.startsWith("http://localhost:8888/r") && details.statusCode >= 500) {
+        console.log("<onHeadersReceived> Error: ", details.url);
+        console.log(details);
 
-    // we do not use { cancel: true } here but redirect another time to make sure 
-    // the target domain is listed as block and not the skip proxy address
-    return { redirectUrl: targetUrl.toString() };
-  }
+        const url = new URL(details.url);
+        // The actual URL that we need is in ?url=$url
+        const target = url.search.split("=")[1];
+        const targetUrl = new URL(target);
+        knownNonSCION[targetUrl.hostname] = true;
+        console.log("<onHeadersReceived> known NON scion (after resolve): ", targetUrl.hostname)
+
+        // we do not use { cancel: true } here but redirect another time to make sure 
+        // the target domain is listed as block and not the skip proxy address
+        return { redirectUrl: targetUrl.toString() };
+    }
 }

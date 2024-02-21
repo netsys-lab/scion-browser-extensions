@@ -3,22 +3,22 @@
 
 function saveStorageValue(key, value) {
     return new Promise((resolve, reject) => {
-      chrome.storage.sync.set({[key]: value}, function() {
-        resolve();
-      });
+        chrome.storage.sync.set({ [key]: value }, function () {
+            resolve();
+        });
     });
-  }
+}
 
-  function getStorageValue(key) {
+function getStorageValue(key) {
     return new Promise((resolve, reject) => {
-      chrome.storage.sync.get([key], function(result) {
-        resolve(result[key]);
-      });
+        chrome.storage.sync.get([key], function (result) {
+            resolve(result[key]);
+        });
     });
-  }
+}
 
-  function toSet(key) {
-      return new Promise(resolve => {
+function toSet(key) {
+    return new Promise(resolve => {
         resolve(new Set(key));
-      });
-  }
+    });
+}

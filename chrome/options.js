@@ -38,8 +38,8 @@ window.onload = function () {
     getStorageValue('isd_whitelist').then((isdSet) => {
         displayToggleISD(isdSet);
     });
-    getStorageValue('isd_all').then(value =>{
-        document.getElementById("toggleRunning").checked = value
+    getStorageValue('isd_all').then(value => {
+        document.getElementById("allowAllTrafficToggle").checked = value
     });
     registerToggleISDHandler();
     registerToggleAllHandler();
@@ -69,7 +69,7 @@ function registerToggleISDHandler() {
 
 
 function registerToggleAllHandler() {
-    const allToggle = document.getElementById("toggleRunning");
+    const allToggle = document.getElementById("allowAllTrafficToggle");
     console.log(allToggle)
     const parentDiv = allToggle.parentElement;
     parentDiv.onclick = () => {
@@ -174,7 +174,6 @@ function registerToggleSitePreferenceHandler() {
     }
 };
 
-
 function toggleSitePreference(checked_id) {
     const isdToggle = document.getElementById(checked_id);
     isdToggle.checked = !isdToggle.checked;
@@ -187,13 +186,10 @@ function toggleSitePreference(checked_id) {
     });
 }
 
-
-
 document.getElementById('checkboxGlobalStrict')
     .addEventListener('click', function () {
         toggleGlobalStrictMode();
     });
-
 
 buttonAddHostname
     .addEventListener('click', function () {
