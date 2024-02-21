@@ -7,6 +7,7 @@
     "declarativeContent",
     "proxy",
     "storage",
+    "cookies",
     "webRequest",
     "webRequestBlocking",
     "http://*/*",

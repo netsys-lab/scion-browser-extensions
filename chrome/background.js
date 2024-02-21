@@ -13,6 +13,7 @@ let knownNonSCION = {
 let knownSCION = {
 
 };
+let policyCookie = null
 
 // This is a bit hacky but probably easier than wrapping everything
 // in a bunder step
@@ -53,46 +54,57 @@ chrome.proxy.settings.set(
   { value: config, scope: 'regular' },
   function () { });
 
-function allowAllgeofence(value) {
-  console.log(value)
-  if (value) {
-    let whiteArray = new Array()
-    whiteArray.push("+")
+function allowAllgeofence(allowAll) {
+  console.log("allowAllgeofence: ", allowAll)
 
-    var req = new XMLHttpRequest();
-    req.open("PUT", "http://localhost:8888/setPolicy", true);
-    req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-    req.onreadystatechange = function () {
-      if (req.readyState == 4) {
-        console.log("Response code to setISDPolicy:" + req.status);
-      }
-    };
-    req.send(JSON.stringify(whiteArray));
+  if (allowAll) {
+    let whitelist = new Array()
+    whitelist.push("+")
+    setPolicy(whitelist)
+    return
   }
-  else {
+
     getStorageValue('isd_whitelist').then((isdSet) => {
       console.log(isdSet)
       geofence(isdSet);
     });
-  }
 }
 
 function geofence(isdList) {
-  let whiteArray = new Array()
-  for (const isd of isdList) {
-    whiteArray.push("+ " + isd);
-  }
-  whiteArray.push("-")
+  console.log("geofence: ", isdList)
 
+  let whitelist = new Array()
+  for (const isd of isdList) {
+    whitelist.push("+ " + isd);
+  }
+  whitelist.push("-") // deny everything else
+  setPolicy(whitelist)
+}
+
+function setPolicy(policy) {
   var req = new XMLHttpRequest();
   req.open("PUT", "http://localhost:8888/setPolicy", true);
   req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
   req.onreadystatechange = function () {
-    if (req.readyState == 4) {
+    if (req.readyState == XMLHttpRequest.DONE) {
+      // The fetch operation is complete. This could mean that either the data transfer has been completed successfully or failed.
       console.log("Response code to setISDPolicy:" + req.status);
     }
   };
-  req.send(JSON.stringify(whiteArray));
+  req.send(JSON.stringify(policy));
+  console.log("set policy: ", JSON.stringify(policy))
+
+  chrome.cookies.getAll({ name: "caddy-scion-forward-proxy" }, function (cookies) {
+    console.log("found cookies: " + cookies);
+    if (cookies.length > 1) {
+      console.log("expected at most one cookie")
+    }
+
+    if (cookies.length != 0) {
+      policyCookie = cookies[0]
+    }
+  })
+
 }
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -196,6 +208,9 @@ chrome.webRequest.onErrorOccurred.addListener(
 
 chrome.webRequest.onHeadersReceived.addListener(
   onHeadersReceived, { urls: ["<all_urls>"] }, ['blocking']);
+
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  onBeforeSendHeaders, { urls: ["<all_urls>"] }, ['blocking', 'requestHeaders', 'extraHeaders']);
 
 function onBeforeRequest(requestInfo) {
 
@@ -393,6 +408,41 @@ function printAllFields(obj) {
       console.log(`${field}: ${obj[field]}`);
     }
   }
+}
+
+function onBeforeSendHeaders(details) {
+  console.log("<onBeforeSendHeaders>", details.url)
+
+  if (details.url.startsWith("http://localhost:8888") || policyCookie == null) {
+    // nothing to do in case there is no cookie or doing a request to the forward-proxy
+    return {}
+  }
+
+  let foundCookieHeader = false;
+  for (var i = 0; i < details.requestHeaders.length; ++i) {
+    if (details.requestHeaders[i].name === "Cookie") {
+      let cookies = details.requestHeaders[i].value.split(",")
+      let forwardProxyCookies = cookies.filter((c) => c.startsWith("caddy-scion-forward-proxy"));
+
+      if (forwardProxyCookies.length == 0) {
+        details.requestHeaders[i].value += "," + policyCookie.name + "=" + policyCookie.value
+        console.log("appended to Cookie header")
+      }
+
+      foundCookieHeader = true
+      break;
+    }
+  }
+
+  if (!foundCookieHeader) {
+    details.requestHeaders.push({
+      name: "Cookie",
+      value: policyCookie.name + "=" + policyCookie.value
+    })
+    console.log("added Cookie header")
+  }
+
+  return { requestHeaders: details.requestHeaders };
 }
 
 function onHeadersReceived(details) {
