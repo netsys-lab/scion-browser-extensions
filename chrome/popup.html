@@ -136,10 +136,9 @@
 
 <body style="padding: 1em;">
     <h3 id="scionsupport" class="text-lg text-left font-bold mb-3 mt-3"></h3>
-    <div id="domainlist" class="w-100 mb-4">
-
-    </div>
+    <div id="domainlist" class="w-100 mb-4"></div>
     <hr />
+
     <div class="flex justify-center mb-2" id="scionModePreference">
         <label for="toogleA" class="flex items-center cursor-pointer">
             <div id="maindomain" class="mr-3 text-gray-700 font-medium text-sm ">
@@ -161,30 +160,20 @@
         </label>
     </div>
     <hr />
+
     <div class="flex">
         <button
             class="px-2 py-1 rounded-md text-sm font-medium border-0 focus:outline-none focus:ring transition text-blue-600 hover:text-blue-800 active:bg-blue-200 focus:ring-blue-300"
             id="button-options">Manage Preferences...</button>
     </div>
     <hr />
-    <div class="ac">
 
+    <div class="ac">
         <input class="ac-input" id="ac-1" name="ac-1" type="checkbox" />
         <label id="ac-label-main"
             class="ac-label text-sm font-medium border-0 focus:outline-none focus:ring transition text-blue-600 hover:text-blue-800 active:bg-blue-200 focus:ring-blue-300"
             for="ac-1">Path Usage...</label>
-
-        <article class="ac-text" id="path-usage-container">
-
-        </article>
-        <!--/ac-text-->
-
-    </div>
-    <!--/ac-->
-    <div class="d-none hidden flex justify-center mb-4">
-        <span class="text-sm mr-1 text-gray-700 font-medium">SCION forwarding:</span>
-        <span id="headline"
-            class="inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3">Inactive</span>
+        <article class="ac-text" id="path-usage-container"></article>
     </div>
 
     <script src="shared/storage.js"></script>

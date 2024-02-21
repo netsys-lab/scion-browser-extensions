@@ -1,7 +1,8 @@
 {
     "name": "SCION Browser Extension",
+    "description": "Extension to explore the Web over SCION!",
     "version": "1.0",
-    "description": "Build an Extension!",
+    "manifest_version": 2,
     "permissions": [
         "activeTab",
         "declarativeContent",
@@ -14,17 +15,6 @@
         "https://*/*",
         "http://localhost/*"
     ],
-    "omnibox": {
-        "keyword": "scion"
-    },
-    "options_page": "options.html",
-    "background": {
-        "scripts": [
-            "shared/storage.js",
-            "background.js"
-        ],
-        "persistent": true
-    },
     "browser_action": {
         "default_popup": "popup.html",
         "default_title": "SCION Browser extension",
@@ -34,11 +24,21 @@
             "32": "/images/scion-38.jpg"
         }
     },
+    "options_page": "options.html",
+    "background": {
+        "scripts": [
+            "shared/storage.js",
+            "background.js"
+        ],
+        "persistent": true
+    },
+    "omnibox": {
+        "keyword": "scion"
+    },
     "icons": {
         "16": "/images/scion-0.png",
         "32": "/images/scion-1.png",
         "48": "/images/scion-2.png",
         "128": "/images/scion-3.png"
-    },
-    "manifest_version": 2
+    }
 }

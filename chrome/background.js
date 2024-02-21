@@ -17,6 +17,8 @@ const imports = [
 // communication between the popup/options and background happens over the database
 var getRequestsDatabaseAdapter;
 
+/*--- setup ------------------------------------------------------------------*/
+
 // TODO: if there are some race conditions, add a startup
 // function that is called manually after all scripts are loaded
 // Let's later move to something that allows using imports and
@@ -35,6 +37,13 @@ getStorageValue('globalStrictMode').then((val) => {
     globalStrictMode = !!val;
 });
 
+// Do icon setup etc at startup
+getStorageValue('extension_running').then(extensionRunning => {
+    updateRunningIcon(extensionRunning);
+});
+
+/*--- PAC --------------------------------------------------------------------*/
+
 /* PAC configuration */
 var config = {
     mode: "pac_script",
@@ -50,6 +59,33 @@ chrome.proxy.settings.set({ value: config, scope: 'regular' }, function () {
         console.log(config);
     });
 });
+
+/*--- storage ----------------------------------------------------------------*/
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    // In case we disable running for the extension, lets put an empty set for now
+    // Later, we could remove the PAC script, but doesn't impact us now...
+    if (namespace == 'sync' && changes.extension_running?.newValue !== undefined) {
+        updateRunningIcon(changes.extension_running.newValue);
+    } else if (namespace == 'sync' && changes.isd_whitelist?.newValue) {
+        geofence(changes.isd_whitelist.newValue);
+    } else if (namespace == 'sync' && changes.perSiteStrictMode?.newValue !== undefined) {
+        perSiteStrictMode = changes.perSiteStrictMode?.newValue;
+    } else if (namespace == 'sync' && changes.globalStrictMode?.newValue !== undefined) {
+        globalStrictMode = changes.globalStrictMode?.newValue;
+    } else if (namespace == 'sync' && changes.isd_all?.newValue !== undefined) {
+        allowAllgeofence(changes.isd_all.newValue);
+    }
+})
+
+// Changes icon depending on the extension is running or not
+function updateRunningIcon(extensionRunning) {
+    if (extensionRunning) {
+        chrome.browserAction.setIcon({ path: "/images/scion-38.jpg" });
+    } else {
+        chrome.browserAction.setIcon({ path: "/images/scion-38_disabled.jpg" });
+    }
+}
 
 function allowAllgeofence(allowAll) {
     console.log("allowAllgeofence: ", allowAll)
@@ -104,21 +140,19 @@ function setPolicy(policy) {
 
 }
 
-chrome.storage.onChanged.addListener((changes, namespace) => {
-    // In case we disable running for the extension, lets put an empty set for now
-    // Later, we could remove the PAC script, but doesn't impact us now...
-    if (namespace == 'sync' && changes.extension_running?.newValue !== undefined) {
-        updateRunningIcon(changes.extension_running.newValue);
-    } else if (namespace == 'sync' && changes.isd_whitelist?.newValue) {
-        geofence(changes.isd_whitelist.newValue);
-    } else if (namespace == 'sync' && changes.perSiteStrictMode?.newValue !== undefined) {
-        perSiteStrictMode = changes.perSiteStrictMode?.newValue;
-    } else if (namespace == 'sync' && changes.globalStrictMode?.newValue !== undefined) {
-        globalStrictMode = changes.globalStrictMode?.newValue;
-    } else if (namespace == 'sync' && changes.isd_all?.newValue !== undefined) {
-        allowAllgeofence(changes.isd_all.newValue);
-    }
-})
+/*--- tabs -------------------------------------------------------------------*/
+
+// User switches between tabs
+chrome.tabs.onActivated.addListener(function (activeInfo) {
+    chrome.tabs.get(activeInfo.tabId, (tab) => {
+        handleTabChange(tab);
+    });
+});
+
+// Update icon depending on hostname of current active tab
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+    handleTabChange(tab);
+});
 
 // Displays a green/blue SCION icon depending on the current url is
 // being forwarded via SCION
@@ -147,56 +181,23 @@ async function handleTabChange(tab) {
     }
 }
 
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-    // read changeInfo data and do something with it (like read the url)
-    if (changeInfo.url) {
-        handleTabChange(tab);
-    }
-});
-
-// Update icons and forwarding_enabled field depending on hostname of
-// current active tab
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-    // Url change in active tab
-    handleTabChange(tab);
-});
-
-// Changes icon depending on the extension is running or not
-function updateRunningIcon(extensionRunning) {
-    if (extensionRunning) {
-        chrome.browserAction.setIcon({ path: "/images/scion-38.jpg" });
-    } else {
-        chrome.browserAction.setIcon({ path: "/images/scion-38_disabled.jpg" });
-    }
-}
-
-// Do icon setup etc at startup
-getStorageValue('extension_running').then(extensionRunning => {
-    updateRunningIcon(extensionRunning);
-});
-
-// User switches between tabs
-chrome.tabs.onActivated.addListener(function (activeInfo) {
-    chrome.tabs.get(activeInfo.tabId, (tab) => {
-        handleTabChange(tab);
-    });
-});
+/*--- requests ---------------------------------------------------------------*/
 
 /* Request intercepting (see https://developer.chrome.com/docs/extensions/reference/api/webRequest#type-BlockingResponse) */
 chrome.webRequest.onBeforeRequest.addListener(
     onBeforeRequest, { urls: ["<all_urls>"] }, ['blocking']);
+
+chrome.webRequest.onBeforeSendHeaders.addListener(
+    onBeforeSendHeaders, { urls: ["<all_urls>"] }, ['blocking', 'requestHeaders', 'extraHeaders']);
+
+chrome.webRequest.onHeadersReceived.addListener(
+    onHeadersReceived, { urls: ["<all_urls>"] }, ['blocking']);
 
 chrome.webRequest.onBeforeRedirect.addListener(
     onBeforeRedirect, { urls: ["<all_urls>"] });
 
 chrome.webRequest.onErrorOccurred.addListener(
     onErrorOccurred, { urls: ["<all_urls>"] });
-
-chrome.webRequest.onHeadersReceived.addListener(
-    onHeadersReceived, { urls: ["<all_urls>"] }, ['blocking']);
-
-chrome.webRequest.onBeforeSendHeaders.addListener(
-    onBeforeSendHeaders, { urls: ["<all_urls>"] }, ['blocking', 'requestHeaders', 'extraHeaders']);
 
 function onBeforeRequest(requestInfo) {
 
@@ -287,6 +288,61 @@ function onBeforeRequest(requestInfo) {
 
     console.log("<onBeforeRequest> assumed non scion: " + url.hostname);
     return {};
+}
+
+// Add the path policy cookie, aquired after setting a policy, to all requests
+function onBeforeSendHeaders(details) {
+    console.log("<onBeforeSendHeaders>", details.url)
+
+    if (details.url.startsWith("http://localhost:8888") || policyCookie == null) {
+        // nothing to do in case there is no cookie or doing a request to the forward-proxy
+        return {}
+    }
+
+    let foundCookieHeader = false;
+    for (var i = 0; i < details.requestHeaders.length; ++i) {
+        if (details.requestHeaders[i].name === "Cookie") {
+            let cookies = details.requestHeaders[i].value.split(",")
+            let forwardProxyCookies = cookies.filter((c) => c.startsWith("caddy-scion-forward-proxy"));
+
+            if (forwardProxyCookies.length == 0) {
+                details.requestHeaders[i].value += "," + policyCookie.name + "=" + policyCookie.value
+                console.log("appended to Cookie header")
+            }
+
+            foundCookieHeader = true
+            break;
+        }
+    }
+
+    if (!foundCookieHeader) {
+        details.requestHeaders.push({
+            name: "Cookie",
+            value: policyCookie.name + "=" + policyCookie.value
+        })
+        console.log("added Cookie header")
+    }
+
+    return { requestHeaders: details.requestHeaders };
+}
+
+// Skip answers on a resolve request with a status code 500 if the host is not scion capable
+function onHeadersReceived(details) {
+    if (details.url.startsWith("http://localhost:8888/r") && details.statusCode >= 500) {
+        console.log("<onHeadersReceived> Error: ", details.url);
+        console.log(details);
+
+        const url = new URL(details.url);
+        // The actual URL that we need is in ?url=$url
+        const target = url.search.split("=")[1];
+        const targetUrl = new URL(target);
+        knownNonSCION[targetUrl.hostname] = true;
+        console.log("<onHeadersReceived> known NON scion (after resolve): ", targetUrl.hostname)
+
+        // we do not use { cancel: true } here but redirect another time to make sure 
+        // the target domain is listed as block and not the skip proxy address
+        return { redirectUrl: targetUrl.toString() };
+    }
 }
 
 // Skip returns a valid redirect response, meaning there is SCION enabled 
@@ -393,72 +449,5 @@ function onErrorOccurred(details) {
                 tabId,
                 { url: chrome.runtime.getURL("error.html") });
         });
-    }
-}
-
-// debugging funcion
-function printAllFields(obj) {
-    for (let field in obj) {
-        if (typeof obj[field] === "object") {
-            // If the field is an object, print its fields recursively
-            console.log(`${field}:`);
-            printAllFields(obj[field]);
-        } else {
-            // If the field is a primitive type, print its value
-            console.log(`${field}: ${obj[field]}`);
-        }
-    }
-}
-
-function onBeforeSendHeaders(details) {
-    console.log("<onBeforeSendHeaders>", details.url)
-
-    if (details.url.startsWith("http://localhost:8888") || policyCookie == null) {
-        // nothing to do in case there is no cookie or doing a request to the forward-proxy
-        return {}
-    }
-
-    let foundCookieHeader = false;
-    for (var i = 0; i < details.requestHeaders.length; ++i) {
-        if (details.requestHeaders[i].name === "Cookie") {
-            let cookies = details.requestHeaders[i].value.split(",")
-            let forwardProxyCookies = cookies.filter((c) => c.startsWith("caddy-scion-forward-proxy"));
-
-            if (forwardProxyCookies.length == 0) {
-                details.requestHeaders[i].value += "," + policyCookie.name + "=" + policyCookie.value
-                console.log("appended to Cookie header")
-            }
-
-            foundCookieHeader = true
-            break;
-        }
-    }
-
-    if (!foundCookieHeader) {
-        details.requestHeaders.push({
-            name: "Cookie",
-            value: policyCookie.name + "=" + policyCookie.value
-        })
-        console.log("added Cookie header")
-    }
-
-    return { requestHeaders: details.requestHeaders };
-}
-
-function onHeadersReceived(details) {
-    if (details.url.startsWith("http://localhost:8888/r") && details.statusCode >= 500) {
-        console.log("<onHeadersReceived> Error: ", details.url);
-        console.log(details);
-
-        const url = new URL(details.url);
-        // The actual URL that we need is in ?url=$url
-        const target = url.search.split("=")[1];
-        const targetUrl = new URL(target);
-        knownNonSCION[targetUrl.hostname] = true;
-        console.log("<onHeadersReceived> known NON scion (after resolve): ", targetUrl.hostname)
-
-        // we do not use { cancel: true } here but redirect another time to make sure 
-        // the target domain is listed as block and not the skip proxy address
-        return { redirectUrl: targetUrl.toString() };
     }
 }

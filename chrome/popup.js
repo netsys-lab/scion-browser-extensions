@@ -1,17 +1,125 @@
 // Copyright 2021 ETH, Ovgu
 'use strict';
 
-
-const headline = document.getElementById('headline');
 const toggleRunning = document.getElementById('toggleRunning');
 const checkboxRunning = document.getElementById('checkboxRunning');
 const lineRunning = document.getElementById("lineRunning");
 const scionmode = document.getElementById("scionmode");
 const mainDomain = document.getElementById("maindomain");
 const pathUsageContainer = document.getElementById("path-usage-container");
+const scionModePreference = document.getElementById('scionModePreference');
+const domainList = document.getElementById("domainlist");
+const scionsupport = document.getElementById("scionsupport");
 
 var perSiteStrictMode = {};
-var popupMainDomain;
+var popupMainDomain = "";
+var getRequestsDatabaseAdapter;
+
+checkboxRunning.onclick = toggleExtensionRunning;
+
+document.getElementById('button-options').addEventListener('click', function () {
+    chrome.tabs.create({ 'url': 'chrome://extensions/?options=' + chrome.runtime.id });
+});
+
+// TODO: if there are some race conditions, add a startup
+// function that is called manually after all scripts are loaded
+// Let's later move to something that allows using imports and
+// maybe even typescript, e.g. https://github.com/abhijithvijayan/web-extension-starter
+(() => {
+    const src = chrome.extension.getURL('database.js');
+    import(src).then(req => {
+        getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
+        getStorageValue('perSiteStrictMode').then((val) => {
+            perSiteStrictMode = val || {};
+            loadRequestInfo();
+        });
+
+    })
+
+})();
+
+window.onload = function () {
+    updatePathUsage();
+}
+
+const updatePathUsage = () => {
+    pathUsageContainer.innerHTML = "";
+
+    console.log("get path usage")
+    fetch("http://localhost:8888/pathUsage", {
+        method: "GET"
+    }).then(response => {
+        if (response.status === 200) {
+            response.json().then(json => {
+                console.log(json)
+                const startIndex = 2; // The first indices are already used the parent container
+                json.forEach((pathUsage, i) => {
+                    let pathUsageChild = newPathUsageChild(pathUsage, i + startIndex);
+                    console.log(pathUsageChild)
+                    pathUsageContainer.innerHTML += pathUsageChild
+                })
+                console.log(pathUsageContainer.innerHTML)
+            });
+        }
+    });
+
+};
+
+const newPathUsageChild = (pathUsage, index) => {
+    // This is at the moment just for presentation purposes and needs to be
+    // rewritten in the end...
+    console.log("path usage: ", pathUsage)
+    const isds = new Set(pathUsage.Path.split(" -> ").map(v => v.split("-")[0]));
+    const flagMap = {
+        "EU": "images/european-union.png",
+        "CH": "images/switzerland.png",
+        "AWS": "images/amazon.png",
+        "US": "images/united-states.png",
+        "JP": "images/japan.png",
+        "TW": "images/taiwan.png",
+        "CN": "images/china.png",
+        "KR": "images/south-korea.png",
+        "KREONET": "images/south-korea.png",
+        "AS": "images/asia.png",
+        "NA": "images/north-america.png",
+        "SSFN": "images/switzerland.png",
+        "SCIREN": "images/scion-0.png",
+        "HVR": "images/hin.png",
+        "RESERVED": "images/unknown.png",
+        "UNKNOWN": "images/unknown.png",
+    }
+
+    return (`
+<div class="ac-sub">
+    <input class="ac-input" id="ac-${index}" name="ac-${index}" type="checkbox" />
+    <label class="ac-label" for="ac-${index}">${pathUsage.Domain}</label>
+    <article class="ac-sub-text">
+        <p><b>Strategy:</b>${pathUsage.Strategy}</p>
+        <p><b>Sent:</b>${humanFileSize(pathUsage.Sent)}</p>
+        <p><b>Received:</b>${humanFileSize(pathUsage.Received)}</p>
+        <p><b>ISDs:</b></p>
+
+        <div class="flag-container">
+        ${[...isds].map(isd =>
+        `<div class="flag">
+                <img src=${flagMap[returnCountryCode(isd)]}>
+                <div class="description">
+                    <p>(${returnCountryCode(isd)})</p>
+                </div>
+            </div>
+        `).join("")}
+        </div>
+       
+        <div class="ac-sub">
+          <input class="ac-input" id="ac-${index}-path" name="ac-${index}-path" type="checkbox" />
+          <label class="ac-label" for="ac-${index}-path"><b>Path:</b></label>
+          <article class="ac-sub-text">
+           <p>${pathUsage.Path}</p>
+          </article >
+        </div >
+    </article >
+</div > `)
+}
 
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
@@ -33,61 +141,6 @@ function humanFileSize(bytes, si = false, dp = 1) {
 
 
     return bytes.toFixed(dp) + ' ' + units[u];
-}
-
-const newPathUsageChild = (pathUsage, index) => {
-    // This is at the moment just for presentation purposes and needs to be
-    // rewritten in the end...
-    console.log(pathUsage)
-    const isds = new Set(pathUsage.Path.split(" -> ").map(v => v.split("-")[0]));
-    const flagMap = {
-        "EU": "images/european-union.png",
-        "CH": "images/switzerland.png",
-        "AWS": "images/amazon.png",
-        "US": "images/united-states.png",
-        "JP": "images/japan.png",
-        "TW": "images/taiwan.png",
-        "CN": "images/china.png",
-        "KR": "images/south-korea.png",
-        "KREONET": "images/south-korea.png",
-        "AS": "images/asia.png",
-        "NA": "images/north-america.png",
-        "SSFN": "images/switzerland.png",
-        "SCIREN": "images/scion-0.png",
-        "HVR": "images/hin.png",
-        "RESERVED": "images/unknown.png",
-        "UNKNOWN": "images/unknown.png",
-    }
-
-    return (
-        `<div class="ac-sub">
-      <input class="ac-input" id="ac-${index}" name="ac-${index}" type="checkbox" />
-      <label class="ac-label" for="ac-${index}">${pathUsage.Domain}</label>
-      <article class="ac-sub-text">
-        <p><b>Strategy:</b> ${pathUsage.Strategy}</p>
-        <p><b>Sent:</b> ${humanFileSize(pathUsage.Sent)}</p>
-        <p><b>Received:</b> ${humanFileSize(pathUsage.Received)}</p>
-        <p><b>ISDs:</b> </p>
-        <div class="flag-container">
-        ${[...isds].map(isd => `<div class="flag">
-                                <img src=${flagMap[returnCountryCode(isd)]}>
-                                <div class="description">
-                                  <p>(${returnCountryCode(isd)})</p>
-                                </div>
-                              </div>
-                                `).join("")}
-        </div>
-       
-        <div class="ac-sub">
-          <input class="ac-input" id="ac-${index}-path" name="ac-${index}-path" type="checkbox" />
-          <label class="ac-label" for="ac-${index}-path"><b>Path:</b></label>
-          <article class="ac-sub-text">
-           <p>${pathUsage.Path}</p>
-          </article >
-        </div >
-      </article >
-    </div > `
-    )
 }
 
 function returnCountryCode(isd) {
@@ -120,55 +173,8 @@ function returnCountryCode(isd) {
     return code
 }
 
-const updatePathUsage = () => {
-    pathUsageContainer.innerHTML = "";
-    console.log("get path usage")
-    fetch("http://localhost:8888/pathUsage", {
-        method: "GET"
-    }).then(response => {
-
-        if (response.status === 200) {
-            response.json().then(res => {
-                const startIndex = 2; // The first indices are already used the parent container
-                res.forEach((pathUsage, i) => {
-                    let pathUsageChild = newPathUsageChild(pathUsage, i + startIndex);
-                    pathUsageContainer.innerHTML += pathUsageChild
-                    console.log(pathUsageChild)
-                })
-            });
-        }
-    });
-
-};
-
-window.onload = function () {
-
-    // Update Forwarding badge depending on storage settings
-    getStorageValue('forwarding_enabled').then(isForwardingEnabled => {
-        if (isForwardingEnabled) {
-            headline.innerText = "Active"
-            headline.className = "inline-block rounded-full text-white bg-green-500 px-2 py-1 text-xs font-bold mr-3";
-        } else {
-            headline.innerText = "Inactive"
-            headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
-        }
-    });
-
-    // Load extension running value and remove other settings in case its not running
-    getStorageValue('extension_running').then((val) => {
-        toggleRunning.checked = false;// val;
-        if (!val) {
-            headline.innerText = "Inactive"
-            headline.className = "inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3";
-        }
-    });
-
-    updatePathUsage();
-}
-
 // Start/Stop global forwarding
 function toggleExtensionRunning() {
-
     toggleRunning.checked = !toggleRunning.checked;
     const newPerSiteStrictMode = {
         ...perSiteStrictMode,
@@ -192,56 +198,19 @@ function toggleExtensionRunning() {
     });
 
 }
-checkboxRunning.onclick = toggleExtensionRunning;
 
-function displayHostList(hostList) {
-    if (!hostList) {
-        return;
-    }
-    document.getElementById('output').innerHTML = ""
-    for (var i = 0; i < hostList.length; i++) {
-        document.getElementById('output')
-            .innerHTML += '<label class="inline-flex items-center mt-3"> <input type="checkbox" id=hostname-' + i + ' class="form-checkbox h-4 w-4 text-gray-600"><span class="ml-2 text-gray-700">' + hostList[i] + '</span> </label>';
-    }
-}
-
-function addHost(host) {
-    return getStorageValue('list').then(toSet).then(hostSet => {
-        hostSet.add(host);
-        saveStorageValue('list', [...hostSet]).then(() => {
-            console.log('Added host: ' + host);
-        })
-        return hostSet;
-    });
-}
-
-function deleteHosts(hostlist) {
-    return getStorageValue('list').then(toSet).then(hostSet => {
-        for (const hostname of hostlist) {
-            hostSet.delete(hostname);
-        }
-        saveStorageValue('list', [...hostSet]).then(() => {
-            console.log('Deleted hosts: ' + hostlist);
-        })
-        return hostSet;
-    });
-}
-
-var getRequestsDatabaseAdapter;
 async function loadRequestInfo() {
     const databaseAdapter = await getRequestsDatabaseAdapter();
 
-
-    const domainList = document.getElementById("domainlist");
     const checkedDomains = [];
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
         var activeTab = tabs[0];
         var activeTabId = activeTab.id; // or do whatever you need
         const url = new URL(activeTab.url);
         popupMainDomain = url.hostname;
+
         let requests = await databaseAdapter.get({ mainDomain: url.hostname }, true);
         const mainDomainSCIONEnabled = requests.find(r => r.tabId === activeTabId && r.domain === url.hostname && r.scionEnabled);
-        const scionsupport = document.getElementById("scionsupport");
 
         if (perSiteStrictMode[url.hostname]) {
             mainDomain.innerHTML = "SCION preference for " + url.hostname;
@@ -256,12 +225,12 @@ async function loadRequestInfo() {
             lineRunning.style.backgroundColor = "#cccccc";
             scionmode.innerHTML = "When available";
         } else {
-            const scionModePreference = document.getElementById('scionModePreference');
             scionModePreference.style.display = "none";
         }// TODO: Else case would be no SCION... toggleRunning.checked = false;
         requests = requests.filter(r => r.tabId === activeTabId);
         console.log(requests);
         let mixedContent = false;
+
         for (let i = requests.length - 1; i >= 0; i--) {
             const r = requests[i];
             if (!checkedDomains.find(d => d === r.domain)) {
@@ -294,6 +263,7 @@ async function loadRequestInfo() {
                 domainList.appendChild(p);
             }
         });
+
         if (mainDomainSCIONEnabled) {
             if (mixedContent) {
                 scionsupport.innerHTML = "Not all resources loaded via SCION";
@@ -307,24 +277,3 @@ async function loadRequestInfo() {
 
 }
 
-// TODO: if there are some race conditions, add a startup
-// function that is called manually after all scripts are loaded
-// Let's later move to something that allows using imports and
-// maybe even typescript, e.g. https://github.com/abhijithvijayan/web-extension-starter
-(() => {
-    const src = chrome.extension.getURL('database.js');
-    import(src).then(req => {
-        getRequestsDatabaseAdapter = req.getRequestsDatabaseAdapter;
-        getStorageValue('perSiteStrictMode').then((val) => {
-            perSiteStrictMode = val || {};
-            loadRequestInfo();
-        });
-
-    })
-
-})();
-
-document.getElementById('button-options')
-    .addEventListener('click', function () {
-        chrome.tabs.create({ 'url': 'chrome://extensions/?options=' + chrome.runtime.id });
-    });
