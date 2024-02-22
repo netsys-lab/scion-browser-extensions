@@ -114,30 +114,45 @@ function geofence(isdList) {
     setPolicy(whitelist)
 }
 
+// A couple of things happend on a policy change:
+// 1. all cookies and cached proxy authorization credentials are deleted
+// 2. the Skip proxy is updated with the new policy
+// 3. the path policy cookie is globally stored and will be used as proxy authorization from now on
 function setPolicy(policy) {
-    var req = new XMLHttpRequest();
-    req.open("PUT", "http://localhost:8888/setPolicy", true);
-    req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-    req.onreadystatechange = function () {
-        if (req.readyState == XMLHttpRequest.DONE) {
+    // this not only clears all cookies but also the proxy auth credentials
+    chrome.browsingData.remove({ "origins": ["http://localhost"] }, { "cookies": true }, () => {
+        var req = new XMLHttpRequest();
+        req.open("PUT", "http://localhost:8888/setPolicy", true);
+        req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+        req.onreadystatechange = function () {
+            if (req.readyState != XMLHttpRequest.DONE) {
+                return
+            }
+
             // The fetch operation is complete. This could mean that either the data transfer has been completed successfully or failed.
-            console.log("Response code to setISDPolicy:" + req.status);
-        }
-    };
-    req.send(JSON.stringify(policy));
-    console.log("set policy: ", JSON.stringify(policy))
+            console.log("response code to setPolicy:" + req.status);
+            console.log("set policy: ", JSON.stringify(policy))
 
-    chrome.cookies.getAll({ name: "caddy-scion-forward-proxy" }, function (cookies) {
-        console.log("found cookies: " + cookies);
-        if (cookies.length > 1) {
-            console.log("expected at most one cookie")
-        }
+            chrome.cookies.getAll({ name: "caddy-scion-forward-proxy" }, function (cookies) {
+                cookies = cookies.filter((c) => c.domain == "localhost")
+                if (cookies.length > 1) {
+                    console.log("expected at most one cookie")
+                    for (const c of cookies) {
+                        console.log(c.name, c.value, c.domain)
+                    }
+                }
 
-        if (cookies.length != 0) {
-            policyCookie = cookies[0]
-        }
+                if (cookies.length > 0) {
+                    policyCookie = cookies[0]
+                    console.log("new path policy cookie: ", cookies[0].value)
+                }
+            })
+
+        };
+
+        req.send(JSON.stringify(policy));
     })
-
 }
 
 /*--- tabs -------------------------------------------------------------------*/
@@ -187,11 +202,11 @@ async function handleTabChange(tab) {
 chrome.webRequest.onBeforeRequest.addListener(
     onBeforeRequest, { urls: ["<all_urls>"] }, ['blocking']);
 
-chrome.webRequest.onBeforeSendHeaders.addListener(
-    onBeforeSendHeaders, { urls: ["<all_urls>"] }, ['blocking', 'requestHeaders', 'extraHeaders']);
-
 chrome.webRequest.onHeadersReceived.addListener(
     onHeadersReceived, { urls: ["<all_urls>"] }, ['blocking']);
+
+chrome.webRequest.onAuthRequired.addListener(
+    onAuthRequired, { urls: ["<all_urls>"] }, ['blocking']);
 
 chrome.webRequest.onBeforeRedirect.addListener(
     onBeforeRedirect, { urls: ["<all_urls>"] });
@@ -290,42 +305,6 @@ function onBeforeRequest(requestInfo) {
     return {};
 }
 
-// Add the path policy cookie, aquired after setting a policy, to all requests
-function onBeforeSendHeaders(details) {
-    console.log("<onBeforeSendHeaders>", details.url)
-
-    if (details.url.startsWith("http://localhost:8888") || policyCookie == null) {
-        // nothing to do in case there is no cookie or doing a request to the forward-proxy
-        return {}
-    }
-
-    let foundCookieHeader = false;
-    for (var i = 0; i < details.requestHeaders.length; ++i) {
-        if (details.requestHeaders[i].name === "Cookie") {
-            let cookies = details.requestHeaders[i].value.split(",")
-            let forwardProxyCookies = cookies.filter((c) => c.startsWith("caddy-scion-forward-proxy"));
-
-            if (forwardProxyCookies.length == 0) {
-                details.requestHeaders[i].value += "," + policyCookie.name + "=" + policyCookie.value
-                console.log("appended to Cookie header")
-            }
-
-            foundCookieHeader = true
-            break;
-        }
-    }
-
-    if (!foundCookieHeader) {
-        details.requestHeaders.push({
-            name: "Cookie",
-            value: policyCookie.name + "=" + policyCookie.value
-        })
-        console.log("added Cookie header")
-    }
-
-    return { requestHeaders: details.requestHeaders };
-}
-
 // Skip answers on a resolve request with a status code 500 if the host is not scion capable
 function onHeadersReceived(details) {
     if (details.url.startsWith("http://localhost:8888/r") && details.statusCode >= 500) {
@@ -343,6 +322,28 @@ function onHeadersReceived(details) {
         // the target domain is listed as block and not the skip proxy address
         return { redirectUrl: targetUrl.toString() };
     }
+}
+
+// Skip proxy requires the Proxy-Authorization header to be set, 
+// (if not it send back a Proxy-Authenticate header and triggers this function)
+// the header has to contain the path policy cookie that is aquired by the first request 
+// and updated on setPolicy requests as there is no other way to pass the path policy into the 
+// Skip proxy for HTTPS requests (aka encrypted)
+function onAuthRequired(details) {
+    console.log("<onAuthRequired>")
+    console.log(details)
+
+    let cookieInDisguise = ""
+    if (policyCookie != null) {
+        cookieInDisguise = policyCookie.name + "=" + policyCookie.value
+    }
+
+    return {
+        authCredentials: {
+            username: "policy", // garbage value
+            password: cookieInDisguise // might be empty but this is fine as we only need a possibility to inject the path policy cookie
+        }
+    };
 }
 
 // Skip returns a valid redirect response, meaning there is SCION enabled 

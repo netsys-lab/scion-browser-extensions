@@ -11,6 +11,8 @@
         "cookies",
         "webRequest",
         "webRequestBlocking",
+        "webRequestAuthProvider",
+        "browsingData",
         "http://*/*",
         "https://*/*",
         "http://localhost/*"
