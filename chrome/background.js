@@ -408,7 +408,8 @@ function onErrorOccurred(details) {
     console.log(details)
 
     let tabId = details.tabId;
-    if (details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
+    // TODO this results in an inifite recursion in case during the fetch another error happens
+    if (false && details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
         console.log("resolve URL on error: ", details.url)
         fetch("http://localhost:8888/error?url=" + details.url, {
             method: "GET"
