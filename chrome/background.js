@@ -119,8 +119,7 @@ function geofence(isdList) {
 // 2. the Skip proxy is updated with the new policy
 // 3. the path policy cookie is globally stored and will be used as proxy authorization from now on
 function setPolicy(policy) {
-    // this not only clears all cookies but also the proxy auth credentials
-    chrome.browsingData.remove({ "origins": ["http://localhost"] }, { "cookies": true }, () => {
+    let sendSetPolicyRequest = () => {
         var req = new XMLHttpRequest();
         req.open("PUT", "http://localhost:8888/setPolicy", true);
         req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
@@ -152,6 +151,22 @@ function setPolicy(policy) {
         };
 
         req.send(JSON.stringify(policy));
+    }
+
+    // this not only clears all cookies but also the proxy auth credentials
+    chrome.browsingData.remove({ "origins": ["http://localhost"] }, { "cookies": true }, () => {
+        // as we have just removed all cookie we have to readd it
+        if (policyCookie != null) {
+            delete policyCookie["hostOnly"]
+            delete policyCookie["session"]
+            policyCookie["url"] = "http://localhost:8888"
+
+            chrome.cookies.set(policyCookie, () => {
+                sendSetPolicyRequest()
+            })
+        } else {
+            sendSetPolicyRequest()
+        }
     })
 }
 
