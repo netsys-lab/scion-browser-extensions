@@ -1,7 +1,7 @@
 {
   "name": "SCION Browser Extension",
-  "version": "1.0",
-  "description": "Build an Extension!",
+  "version": "1.1",
+  "description": "Make use of the Path-Aware Internet using a local SCION Proxy",
   "permissions": [
     "activeTab",
     "declarativeContent",

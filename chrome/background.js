@@ -1,5 +1,9 @@
-// Copyright 2021 ETH Ovgu
+// Copyright 2021 ETH
+// Copyright 2023-2024 OVGU
 'use strict';
+
+// TODO, make configurable in settings
+let proxyAddress = "localhost:8888";
 
 /** Background State */
 let globalStrictMode = false;
@@ -45,7 +49,7 @@ var config = {
   mode: "pac_script",
   pacScript: {
     data: "function FindProxyForURL(url, host) {\n" +
-      "    return 'PROXY localhost:8888';\n" +
+      "    return 'PROXY " + proxyAddress + "';\n" +
       "}",
   }
 };
@@ -60,7 +64,7 @@ function allowAllgeofence(value) {
     whiteArray.push("+")
 
     var req = new XMLHttpRequest();
-    req.open("PUT", "http://localhost:8888/setPolicy", true);
+    req.open("PUT", "http://" + proxyAddress + "/setPolicy", true);
     req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
     req.onreadystatechange = function () {
       if (req.readyState == 4) {
@@ -85,7 +89,7 @@ function geofence(isdList) {
   whiteArray.push("-")
 
   var req = new XMLHttpRequest();
-  req.open("PUT", "http://localhost:8888/setPolicy", true);
+  req.open("PUT", "http://" + proxyAddress + "/setPolicy", true);
   req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
   req.onreadystatechange = function () {
     if (req.readyState == 4) {
@@ -227,7 +231,7 @@ function onBeforeRequest(requestInfo) {
       // Because these things are only done in strict mode
       // So we would loose all information for domains that are not in 
       // (global) strict mode
-      fetch("http://localhost:8888/resolve?host=" + url.hostname, {
+      fetch("http://" + proxyAddress + "/resolve?host=" + url.hostname, {
         method: "GET"
       }).then(response => {
 
@@ -267,7 +271,7 @@ function onBeforeRequest(requestInfo) {
     } else if (knownSCION[url.hostname]) {
       return {};
     } else {
-      return { redirectUrl: "http://localhost:8888/r?url=" + requestInfo.url };
+      return { redirectUrl: "http://" + proxyAddress + "/r?url=" + requestInfo.url };
     }
   }
 
@@ -279,7 +283,7 @@ function onBeforeRequest(requestInfo) {
 // Skip returns a valid redirect response, meaning there is SCION enabled 
 // and we can do this request again
 function onBeforeRedirect(details) {
-  if (details.redirectUrl && details.url.startsWith("http://localhost:8888/r")) {
+  if (details.redirectUrl && details.url.startsWith("http://" + proxyAddress + "/r")) {
     const url = new URL(details.redirectUrl);
     knownSCION[url.hostname] = true;
   }
@@ -338,7 +342,7 @@ function onErrorOccurred(details) {
   console.log("Error: ", details.error);
   let tabId = details.tabId;
   if (details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
-    fetch("http://localhost:8888/error?url="+details.url, {
+    fetch("http://" + proxyAddress + "/error?url="+details.url, {
       method: "GET"
     }).then(response => {
 
@@ -378,7 +382,7 @@ function onErrorOccurred(details) {
     });
   }
 
-  if (details.url.startsWith("http://localhost:8888/r")) {
+  if (details.url.startsWith("http://" + proxyAddress + "/r")) {
     const url = new URL(details.url);
     // The actual URL that we need is in ?url=$url
     const target = url.search.split("=")[1];
