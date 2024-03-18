@@ -1,6 +1,12 @@
 // Copyright 2021 ETH, Ovgu
 'use strict';
 
+const proxyScheme = "http"
+const proxyHost = "localhost";
+const proxyPort = "8888";
+const proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`
+const proxyPathUsagePath = "/pathUsage"
+
 const toggleRunning = document.getElementById('toggleRunning');
 const checkboxRunning = document.getElementById('checkboxRunning');
 const lineRunning = document.getElementById("lineRunning");
@@ -46,7 +52,7 @@ const updatePathUsage = () => {
     pathUsageContainer.innerHTML = "";
 
     console.log("get path usage")
-    fetch("http://localhost:8888/pathUsage", {
+    fetch(`${proxyAddress}${proxyPathUsagePath}`, {
         method: "GET"
     }).then(response => {
         if (response.status === 200) {

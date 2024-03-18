@@ -1,6 +1,18 @@
 // Copyright 2021 ETH Ovgu
 'use strict';
 
+const proxyScheme = "http"
+const proxyHost = "localhost";
+const proxyPort = "8888";
+const proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`
+
+const proxyHostResolvePath = "/resolve"
+const proxyHostResolveParam = "host"
+const proxyURLResolvePath = "/r"
+const proxyURLResolveParam = "url"
+const proxySetPolicyPath = "/setPolicy"
+const proxyErrorPath = "/error"
+
 /** Background State */
 let globalStrictMode = false;
 let perSiteStrictMode = {};
@@ -50,7 +62,7 @@ var config = {
     pacScript: {
         data:
             "function FindProxyForURL(url, host) {\n" +
-            "    return 'PROXY localhost:8888';\n" +
+            `    return 'PROXY ${proxyAddress}';\n` +
             "}",
     }
 };
@@ -121,7 +133,7 @@ function geofence(isdList) {
 function setPolicy(policy) {
     let sendSetPolicyRequest = () => {
         var req = new XMLHttpRequest();
-        req.open("PUT", "http://localhost:8888/setPolicy", true);
+        req.open("PUT", `${proxyAddress}${proxySetPolicyPath}`, true);
         req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
 
         req.onreadystatechange = function () {
@@ -134,7 +146,7 @@ function setPolicy(policy) {
             console.log("set policy: ", JSON.stringify(policy))
 
             chrome.cookies.getAll({ name: "caddy-scion-forward-proxy" }, function (cookies) {
-                cookies = cookies.filter((c) => c.domain == "localhost")
+                cookies = cookies.filter((c) => c.domain == proxyHost)
                 if (cookies.length > 1) {
                     console.log("expected at most one cookie")
                     for (const c of cookies) {
@@ -154,12 +166,12 @@ function setPolicy(policy) {
     }
 
     // this not only clears all cookies but also the proxy auth credentials
-    chrome.browsingData.remove({ "origins": ["http://localhost"] }, { "cookies": true }, () => {
+    chrome.browsingData.remove({ "origins": [`${proxyScheme}://${proxyHost}`] }, { "cookies": true }, () => {
         // as we have just removed all cookie we have to readd it
         if (policyCookie != null) {
             delete policyCookie["hostOnly"]
             delete policyCookie["session"]
-            policyCookie["url"] = "http://localhost:8888"
+            policyCookie["url"] = proxyAddress
 
             chrome.cookies.set(policyCookie, () => {
                 sendSetPolicyRequest()
@@ -234,7 +246,7 @@ function onBeforeRequest(requestInfo) {
     const url = new URL(requestInfo.url);
 
     // Skip all weird requests...
-    if (url.hostname == "localhost") {
+    if (url.hostname == proxyHost) {
         return {}
     }
 
@@ -264,7 +276,7 @@ function onBeforeRequest(requestInfo) {
             // (global) strict mode
             console.log("<DB> to scion or not to scion: ", url.hostname)
 
-            fetch("http://localhost:8888/resolve?host=" + url.hostname, {
+            fetch(`${proxyAddress}${proxyHostResolvePath}?${proxyHostResolveParam}=${url.hostname}`, {
                 method: "GET"
             }).then(response => {
                 if (response.status === 200) {
@@ -312,7 +324,7 @@ function onBeforeRequest(requestInfo) {
             return {};
         } else {
             console.log("<onBeforeRequest> resolve URL by redirect (strict): ", requestInfo.url)
-            return { redirectUrl: "http://localhost:8888/r?url=" + requestInfo.url };
+            return { redirectUrl: `${proxyAddress}${proxyURLResolvePath}?${proxyURLResolveParam}=${requestInfo.url}`};
         }
     }
 
@@ -322,7 +334,7 @@ function onBeforeRequest(requestInfo) {
 
 // Skip answers on a resolve request with a status code 500 if the host is not scion capable
 function onHeadersReceived(details) {
-    if (details.url.startsWith("http://localhost:8888/r") && details.statusCode >= 500) {
+    if (details.url.startsWith(`${proxyAddress}${proxyURLResolvePath}`) && details.statusCode >= 500) {
         console.log("<onHeadersReceived> Error: ", details.url);
         console.log(details);
 
@@ -364,7 +376,7 @@ function onAuthRequired(details) {
 // Skip returns a valid redirect response, meaning there is SCION enabled 
 // and we can do this request again
 function onBeforeRedirect(details) {
-    if (details.redirectUrl && details.url.startsWith("http://localhost:8888/r")) {
+    if (details.redirectUrl && details.url.startsWith(`${proxyAddress}${proxyURLResolvePath}`)) {
         console.log("<onBeforeRedirect> known scion (after resolve): ", details.redirectUrl)
         const url = new URL(details.redirectUrl);
         knownSCION[url.hostname] = true;
@@ -426,7 +438,7 @@ function onErrorOccurred(details) {
     // TODO this results in an inifite recursion in case during the fetch another error happens
     if (false && details.documentLifecycle === "active" && details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
         console.log("resolve URL on error: ", details.url)
-        fetch("http://localhost:8888/error?url=" + details.url, {
+        fetch(`${proxyAddress}${proxyErrorPath}?${proxyURLResolveParam}=${details.url}`, {
             method: "GET"
         }).then(response => {
 
