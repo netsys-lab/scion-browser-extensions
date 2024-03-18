@@ -62,7 +62,7 @@ var config = {
     pacScript: {
         data:
             "function FindProxyForURL(url, host) {\n" +
-            `    return 'HTTPS ${proxyHost}:${proxyPort}';\n` +
+            `    return '${proxyScheme === "https" ? "HTTPS" : "PROXY"} ${proxyHost}:${proxyPort}';\n` +
             "}",
     }
 };
@@ -315,7 +315,7 @@ function onBeforeRequest(requestInfo) {
     }
 
     // Check document for strict mode
-    if (true || globalStrictMode || perSiteStrictMode[checkDomain]) {
+    if (globalStrictMode || perSiteStrictMode[checkDomain]) {
         if (knownNonSCION[url.hostname]) {
             console.log("<onBeforeRequest> known NON scion (strict): " + url.hostname);
             return { cancel: true };
