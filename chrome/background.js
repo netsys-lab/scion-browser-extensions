@@ -1,9 +1,9 @@
 // Copyright 2021 ETH Ovgu
 'use strict';
 
-const proxyScheme = "http"
+const proxyScheme = "https"
 const proxyHost = "localhost";
-const proxyPort = "8888";
+const proxyPort = "9443";
 const proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`
 
 const proxyHostResolvePath = "/resolve"
@@ -62,7 +62,7 @@ var config = {
     pacScript: {
         data:
             "function FindProxyForURL(url, host) {\n" +
-            `    return 'PROXY ${proxyAddress}';\n` +
+            `    return 'HTTPS ${proxyHost}:${proxyPort}';\n` +
             "}",
     }
 };
@@ -315,7 +315,7 @@ function onBeforeRequest(requestInfo) {
     }
 
     // Check document for strict mode
-    if (globalStrictMode || perSiteStrictMode[checkDomain]) {
+    if (true || globalStrictMode || perSiteStrictMode[checkDomain]) {
         if (knownNonSCION[url.hostname]) {
             console.log("<onBeforeRequest> known NON scion (strict): " + url.hostname);
             return { cancel: true };
