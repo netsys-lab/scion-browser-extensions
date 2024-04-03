@@ -9,6 +9,7 @@ const lineRunning = document.getElementById("lineRunning");
 const scionmode = document.getElementById("scionmode");
 const mainDomain = document.getElementById("maindomain");
 const pathUsageContainer = document.getElementById("path-usage-container");
+const luaContainer = document.getElementById("lua-container");
 
 var perSiteStrictMode = {};
 var popupMainDomain;
@@ -118,6 +119,47 @@ function returnCountryCode(isd){
   return code
 }
 
+function jsonshit(index, data) {
+  if (data === null) {
+    return null;
+  }
+  if (typeof data == "object") {
+    const jsondiv = document.createElement("div");
+    const margin = 10*index;
+    jsondiv.setAttribute("style", `margin-left: ${margin}px;`);
+    Object.entries(data).forEach(([key, value]) => {
+      const entrydiv = jsondiv.appendChild(document.createElement("div"));
+      entrydiv.setAttribute("class", "my-entry");
+      const keydiv = entrydiv.appendChild(document.createElement("div"));
+      keydiv.setAttribute("class", "my-key");
+      keydiv.appendChild(document.createElement('strong')).textContent = key;
+      entrydiv.appendChild(jsonshit(index+1, value));
+    });
+    return jsondiv;
+  } else {
+    const valuediv = document.createElement("div");
+    valuediv.setAttribute("class", "my-value");
+    valuediv.appendChild(document.createElement('strong')).textContent = data;
+    return valuediv;
+  }
+};
+
+const updateLuaSubsystem = () => {
+    fetch("http://localhost:8888/lua/json", {
+    method: "GET"
+  }).then(response => {
+    if (response.status === 200) {
+      response.json().then(res => {
+        const element = jsonshit(1, res);
+        luaContainer.appendChild(element);
+      });
+    } else {
+      luaContainer.innerHTML = "not available";
+    }
+  });
+};
+
+
 const updatePathUsage = () => {
   pathUsageContainer.innerHTML = "";
   fetch("http://localhost:8888/pathUsage", {
@@ -133,8 +175,6 @@ const updatePathUsage = () => {
       });
     }
   });
-
-
 };
 
 
@@ -161,6 +201,7 @@ window.onload = function () {
   });
 
   updatePathUsage();
+  updateLuaSubsystem();
 }
 
 // Start/Stop global forwarding

@@ -124,6 +124,16 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 async function handleTabChange(tab) {
 
   if (tab.active && tab.url) {
+    fetch("http://" + proxyAddress + "/status").then(response => {
+      if (response.status !== 200) {
+        chrome.browserAction.setIcon({ path: "/images/scion-38_proxyerr.jpg"});  
+      }
+    }).catch((e) => {
+      console.warn("Resolution failed");
+      console.error(e);
+      chrome.browserAction.setIcon({ path: "/images/scion-38_proxyerr.jpg"});
+    });
+      
     const url = new URL(tab.url);
     const databaseAdapter = await getRequestsDatabaseAdapter();
     let requests = await databaseAdapter.get({ mainDomain: url.hostname });

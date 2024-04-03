@@ -130,14 +130,27 @@
          width: 0px !important;
          content: unset !important;
       }
+
+      .my-key {
+         color: gray;
+      }
+
+      .my-value {
+         color: green;
+      }
+      .my-label {
+         color: blue;
+      }
    </style>
 </head>
 
 <body style="padding: 1em;">
    <h3 id="scionsupport" class="text-lg text-left font-bold mb-3 mt-3"></h3>
+   Domainlist
    <div id="domainlist" class="w-100 mb-4">
 
    </div>
+   Preferences
    <hr />
    <div class="flex justify-center mb-2" id="scionModePreference">
       <label for="toogleA" class="flex items-center cursor-pointer">
@@ -177,9 +190,16 @@
    
       </article>
       <!--/ac-text-->
-
    </div>
    <!--/ac-->
+   <hr />
+   <div>
+      <h2 class="my-label">Lua Subsystem</h2>
+      <div id="lua-container">
+   
+      </div>
+   </div>
+   </div>
    <div class="d-none hidden flex justify-center mb-4"><span class="text-sm mr-1 text-gray-700 font-medium">SCION
          forwarding:</span> <span id="headline"
          class="inline-block rounded-full text-white bg-red-500 px-2 py-1 text-xs font-bold mr-3">Inactive</span></div>
